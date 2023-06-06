@@ -15,9 +15,8 @@ public class Testing : MonoBehaviour
 
     public string[] s = new string[]
     {
-        "Hi, how are you?:Avira",
-        "It's lovely weather today.",
-        "To be honest, I'm glad it's not snowing anymore!"
+        "I...:Avira",
+        "I have to tell you something."
     };
 
 

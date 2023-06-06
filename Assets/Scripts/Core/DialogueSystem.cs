@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
 
 public class DialogueSystem : MonoBehaviour
@@ -19,16 +18,26 @@ public class DialogueSystem : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        
+
     }
 
-    public void Say(string speech, string speaker)
+    /// <summary>
+    /// Say something and show it on the speech box.
+    /// </summary>
+    public void Say(string speech, string speaker = "")
     {
-        if (isSpeaking)
-        {
-            StopSpeaking();
-            speaking = StartCoroutine(Speaking(speech, speaker));
-        }
+        StopSpeaking();
+
+        speaking = StartCoroutine(Speaking(speech, false, speaker));
+    }
+
+    public void SayAdd(string speech, string speaker = "")
+    {
+        StopSpeaking();
+
+        speechText.text = targetSpeech;
+
+        speaking = StartCoroutine(Speaking(speech, true, speaker));
     }
 
     public void StopSpeaking()
@@ -43,17 +52,23 @@ public class DialogueSystem : MonoBehaviour
     public bool isSpeaking { get { return speaking != null; } }
     [HideInInspector] public bool isWaitingForUserInput = false;
 
+    string targetSpeech = "";
     Coroutine speaking = null;
-    IEnumerator Speaking(string targetSpeesch, string speaker)
+    IEnumerator Speaking(string speech, bool additive, string speaker = "")
     {
         speechPanel.SetActive(true);
-        speechText.text = "";
-        speakerNameText.text = speaker;
+        targetSpeech = speech;
+
+        if (!additive)
+            speechText.text = "";
+        else
+            targetSpeech = speechText.text + targetSpeech;
+        speakerNameText.text = DetermineSpeaker(speaker);
         isWaitingForUserInput = false;
 
-        while (speechText.text != targetSpeesch)
+        while (speechText.text != targetSpeech)
         {
-            speechText.text += targetSpeesch[speechText.text.Length];
+            speechText.text += targetSpeech[speechText.text.Length];
             yield return new WaitForEndOfFrame();
         }
 
@@ -66,9 +81,21 @@ public class DialogueSystem : MonoBehaviour
         StopSpeaking();
     }
 
+    string DetermineSpeaker(string s)
+    {
+        string retVal = speakerNameText.text;
+        if (s != speakerNameText.text && s != "")
+            retVal = (s.ToLower().Contains("narrator")) ? "" : s;
+
+        return retVal;
+    }
+
     [System.Serializable]
     public class ELEMENTS
     {
+        /// <summary>
+        /// The main panel containing all dialogue related elements on the UI
+        /// </summary>
         public GameObject speechPanel;
         public TMP_Text speakerNameText;
         public TMP_Text speechText;
