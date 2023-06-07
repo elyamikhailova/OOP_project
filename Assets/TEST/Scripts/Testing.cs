@@ -13,13 +13,8 @@ public class Testing : MonoBehaviour
         dialogue = DialogueSystem.instance;
     }
 
-    public string[] s = new string[]
-    {
-        "I...:Avira",
-        "I have to tell you something."
-    };
-
-
+    public string[] s;
+  
     int index = 0;
     // Update is called once per frame
     void Update()
