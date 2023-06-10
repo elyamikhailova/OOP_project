@@ -64,8 +64,8 @@ public class CharacterManager : MonoBehaviour
 
     public class CHARACTERBODY
     {
-        public int usual = 0;
-        public int sword = 1;
+        public int normal = 0;
+        public int spear = 1;
         public int helm = 2;
         public int attack = 3;
         public int side = 4;

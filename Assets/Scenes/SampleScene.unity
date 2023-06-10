@@ -293,6 +293,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   elements:
     speechPanel: {fileID: 278657187}
+    speakerNamePanel: {fileID: 0}
     speakerNameText: {fileID: 996117027}
     speechText: {fileID: 1396357611}
   isWaitingForUserInput: 0
@@ -320,7 +321,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 164478130}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0cb4b5d34647bcb42981b2e0a9e67cc5, type: 3}
   m_Name: 
@@ -2112,7 +2113,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1784850517}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b0992877615b349db892e5ae26c78256, type: 3}
   m_Name: 

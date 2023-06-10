@@ -105,6 +105,17 @@ public class Character
         return sprites[index];
     }
 
+    public Sprite GetSprie(string spriteName = "")
+    {
+        Sprite[] sprites = Resources.LoadAll<Sprite>("Images/Characters/" + characterName);
+        for (int i = 0; i < sprites.Length; i++)
+        {
+            if (sprites[i].name == spriteName)
+                return sprites[i];
+        }
+        return sprites.Length > 0 ? sprites[0] : null;
+    }
+
     public void SetBody(int index)
     {
         renderers.bodyRenderer.sprite = GetSprie(index);
@@ -113,15 +124,16 @@ public class Character
     {
         renderers.bodyRenderer.sprite = sprite;
     }
+    public void SetBody(string spriteName)
+    {
+        renderers.bodyRenderer.sprite = GetSprie(spriteName);
+    }
 
     bool isTransitioningBody { get { return transitioningBody != null; } }
     Coroutine transitioningBody = null;
 
     public void TransitionBody(Sprite sprite, float speed, bool smooth)
     {
-        if (renderers.bodyRenderer.sprite == sprite)
-            return;
-
         StopTransitioningBody();
         transitioningBody = CharacterManager.instance.StartCoroutine(TransitioningBody(sprite, speed, smooth));
     }
@@ -154,12 +166,45 @@ public class Character
             image.sprite = sprite;
         }
 
-        while (GlobalF.TransitionImages(ref renderers.bodyRenderer, ref renderers.allBodyRenderers, speed, smooth))
+        while (GlobalF.TransitionImages(ref renderers.bodyRenderer, ref renderers.allBodyRenderers, speed, smooth, true))
         {
             yield return new WaitForEndOfFrame();
         }
 
         StopTransitioningBody();
+    }
+
+    public void Flip()
+    {
+        root.localScale = new Vector3(root.localScale.x * -1, 1, 1);
+    }
+
+    public void FaceLeft()
+    {
+        root.localScale = Vector3.one;
+    }
+
+    public void FaceRight()
+    {
+        root.localScale = new Vector3(-1, 1, 1);
+    }
+
+    public void FadeOut(float speed = 3, bool smooth = false)
+    {
+        Sprite alphaSprite = Resources.Load<Sprite>("Images/AlphaOnly");
+
+        lastBodySprite = renderers.bodyRenderer.sprite;
+
+        TransitionBody(alphaSprite, speed, smooth);
+    }
+
+    Sprite lastBodySprite = null;
+    public void FadeIn(float speed = 3, bool smooth = false)
+    {
+        if (lastBodySprite != null)
+        {
+            TransitionBody(lastBodySprite, speed, smooth);
+        }
     }
 
     /// <summary>

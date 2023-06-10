@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class GlobalF : MonoBehaviour
 {
-    public static bool TransitionImages(ref Image activeImage, ref List<Image> allImages, float speed, bool smooth)
+    public static bool TransitionImages(ref Image activeImage, ref List<Image> allImages, float speed, bool smooth, bool fasterInTime = false)
     {
         bool anyValueChanged = false;
 
@@ -17,7 +17,8 @@ public class GlobalF : MonoBehaviour
             {
                 if (image.color.a < 1f)
                 {
-                    image.color = SetAlpha(image.color, smooth ? Mathf.Lerp(image.color.a, 1f, speed) : Mathf.MoveTowards(image.color.a, 1f, speed));
+                    float spd = fasterInTime ? speed * 2 : speed;
+                    image.color = SetAlpha(image.color, smooth ? Mathf.Lerp(image.color.a, 1f, spd) : Mathf.MoveTowards(image.color.a, 1f, spd));
                     anyValueChanged = true;
                 }
             }

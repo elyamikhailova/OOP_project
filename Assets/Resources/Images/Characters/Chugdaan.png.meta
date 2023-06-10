@@ -110,7 +110,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Chugdaan_0
+      name: normal
       rect:
         serializedVersion: 2
         x: 0
@@ -131,7 +131,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Chugdaan_1
+      name: spear
       rect:
         serializedVersion: 2
         x: 512
@@ -152,7 +152,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Chugdaan_2
+      name: helm
       rect:
         serializedVersion: 2
         x: 0
@@ -173,7 +173,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Chugdaan_3
+      name: attack
       rect:
         serializedVersion: 2
         x: 512
@@ -194,7 +194,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Chugdaan_4
+      name: side
       rect:
         serializedVersion: 2
         x: 0
@@ -215,7 +215,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Chugdaan_5
+      name: sad
       rect:
         serializedVersion: 2
         x: 509
@@ -246,12 +246,12 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      Chugdaan_0: 710293967
-      Chugdaan_1: 1196017194
-      Chugdaan_2: 1863093879
-      Chugdaan_3: 1731597877
-      Chugdaan_4: -1247910593
-      Chugdaan_5: -1937880395
+      attack: 1731597877
+      helm: 1863093879
+      normal: 710293967
+      sad: -1937880395
+      side: -1247910593
+      spear: 1196017194
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

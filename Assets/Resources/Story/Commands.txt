@@ -7,6 +7,12 @@ including filenames, should contain spaces.
     characterName "dialogue"                                                    ex: Chugdaan "bla bla bla"
     + symbol makes dialogue additive to continue from last segment.             ex: Chugdaan +"bla bla"
     No name before dialogue means use last speaker.                             ex: +"bla bla"
+
+#Change character expression
+    setBody(characterName,expressionName)                                       ex: setBody(Chugdaan,sad)
+
+    *optional parameters
+    1. speed of transition                                                      ex: changeBody(Chugdaan,sad,1.0)
     
 #Move character on screen
     move(characterName,targetLocationX,targetLocationY)                         ex: move(Chugdaan,0.3,0.7)
@@ -16,6 +22,11 @@ including filenames, should contain spaces.
     2. smooth movement                                                          ex: move(Chugdaan,0.3,0.7,1.0,false)
     
     setPosition(characterName,targetLocationX,targetLocationY)                  ex: setPosition(Chugdaan,0.3,0.7)
+
+#Flip a character
+    flip(characterName)                                                         ex: flip(Chugdaan)
+    faceLeft(characterName)                                                     ex: faceLeft(Chugdaan)
+    faceRight(characterName)                                                    ex: faceRight(Chugdaan)
     
 #Change Layer Image
     setBackground(imageName)                                                    ex: setBackground(Background_1)
