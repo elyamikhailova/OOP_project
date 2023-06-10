@@ -52,4 +52,24 @@ public class CharacterManager : MonoBehaviour
         return newCharacter;
     }
 
+    public class CHARACTERPOSITIONS
+    {
+        public Vector2 bottomLeft = new Vector2(0, 0);
+        public Vector2 topLeft = new Vector2(0, 1f);
+        public Vector2 center = new Vector2(0.5f, 0.5f);
+        public Vector2 bottomRight = new Vector2(1f, 0);
+        public Vector2 topRight = new Vector2(1f, 1f);
+    }
+    public static CHARACTERPOSITIONS characterPositions = new CHARACTERPOSITIONS();
+
+    public class CHARACTERBODY
+    {
+        public int usual = 0;
+        public int sword = 1;
+        public int helm = 2;
+        public int attack = 3;
+        public int side = 4;
+        public int sad = 5;
+    }
+    public static CHARACTERBODY characterBody = new CHARACTERBODY();
 }

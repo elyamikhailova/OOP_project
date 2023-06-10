@@ -19,16 +19,13 @@ public class Character
     public bool enabled{get{ return root.gameObject.activeInHierarchy;} set{root.gameObject.SetActive(value);}}
 
     public Vector2 anchorPadding { get { return root.anchorMax - root.anchorMin; } }
-        
+     
     public void Say(string speech, bool add = false)
     {
         if (!enabled)
             enabled = true;
 
-        if (!add)
-            dialogue.Say(speech, characterName);
-        else
-            dialogue.SayAdd(speech, characterName);
+        dialogue.Say(speech, characterName, add);
     }
 
     Vector2 targetPosition;
@@ -102,6 +99,69 @@ public class Character
         StopMoving();
     }
 
+    public Sprite GetSprie(int index = 0)
+    {
+        Sprite[] sprites = Resources.LoadAll<Sprite>("Images/Characters/" + characterName);
+        return sprites[index];
+    }
+
+    public void SetBody(int index)
+    {
+        renderers.bodyRenderer.sprite = GetSprie(index);
+    }
+    public void SetBody(Sprite sprite)
+    {
+        renderers.bodyRenderer.sprite = sprite;
+    }
+
+    bool isTransitioningBody { get { return transitioningBody != null; } }
+    Coroutine transitioningBody = null;
+
+    public void TransitionBody(Sprite sprite, float speed, bool smooth)
+    {
+        if (renderers.bodyRenderer.sprite == sprite)
+            return;
+
+        StopTransitioningBody();
+        transitioningBody = CharacterManager.instance.StartCoroutine(TransitioningBody(sprite, speed, smooth));
+    }
+
+    void StopTransitioningBody()
+    {
+        if (isTransitioningBody)
+            CharacterManager.instance.StopCoroutine(transitioningBody);
+        transitioningBody = null;
+    }
+
+    public IEnumerator TransitioningBody(Sprite sprite, float speed, bool smooth)
+    {
+        for (int i = 0; i < renderers.allBodyRenderers.Count; i++)
+        {
+            Image image = renderers.allBodyRenderers[i];
+            if (image.sprite == sprite)
+            {
+                renderers.bodyRenderer = image;
+                break;
+            }
+        }
+
+        if (renderers.bodyRenderer.sprite != sprite)
+        {
+            Image image = GameObject.Instantiate(renderers.bodyRenderer.gameObject, renderers.bodyRenderer.transform.parent).GetComponent<Image>();
+            renderers.allBodyRenderers.Add(image);
+            renderers.bodyRenderer = image;
+            image.color = GlobalF.SetAlpha(image.color, 0f);
+            image.sprite = sprite;
+        }
+
+        while (GlobalF.TransitionImages(ref renderers.bodyRenderer, ref renderers.allBodyRenderers, speed, smooth))
+        {
+            yield return new WaitForEndOfFrame();
+        }
+
+        StopTransitioningBody();
+    }
+
     /// <summary>
     /// Create a new character
     /// </summary>
@@ -117,7 +177,8 @@ public class Character
         root = ob.GetComponent<RectTransform>();
         characterName = _name;
 
-        renderers.renderer = ob.GetComponentInChildren<Image>();
+        renderers.bodyRenderer = ob.transform.Find("BodyLayer").GetComponentInChildren<Image>();
+        renderers.allBodyRenderers.Add(renderers.bodyRenderer);
 
         dialogue = DialogueSystem.instance;
         enabled = enableOnStart;
@@ -128,7 +189,9 @@ public class Character
     [System.Serializable]
     public class Renderers
     {
-        public Image renderer;
+        public Image bodyRenderer;
+
+        public List<Image> allBodyRenderers = new List<Image>();
     }
 
     public Renderers renderers = new Renderers();

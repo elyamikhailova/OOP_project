@@ -8,7 +8,7 @@ public class characterTesting : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        Chugdaan = CharacterManager.instance.GetCharacter("Chugdaan", enableCreatedCharacterOnStart: true );
+        Chugdaan = CharacterManager.instance.GetCharacter("Chugdaan", enableCreatedCharacterOnStart: false );
     }
 
     public string[] speech;
@@ -17,6 +17,10 @@ public class characterTesting : MonoBehaviour
     public Vector2 moveTarget;
     public float moveSpeed;
     public bool smooth;
+
+    public int bodyIndex = 0;
+    public float speed = 5f;
+    public bool smoothTransition = false;
 
     // Update is called once per frame
     void Update()
@@ -38,6 +42,14 @@ public class characterTesting : MonoBehaviour
         if (Input.GetKey(KeyCode.S))
         {
             Chugdaan.StopMoving(true);
+        }
+
+        if (Input.GetKeyDown(KeyCode.B))
+        {
+            if (Input.GetKey(KeyCode.T))
+                Chugdaan.TransitionBody(Chugdaan.GetSprie(CharacterManager.characterBody.sad), speed, smoothTransition);
+            else
+                Chugdaan.SetBody(bodyIndex);
         }
     }
 }
