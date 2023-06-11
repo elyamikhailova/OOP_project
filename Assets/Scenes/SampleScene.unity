@@ -293,7 +293,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   elements:
     speechPanel: {fileID: 278657187}
-    speakerNamePanel: {fileID: 0}
+    speakerNamePanel: {fileID: 1563894108}
     speakerNameText: {fileID: 996117027}
     speechText: {fileID: 1396357611}
   isWaitingForUserInput: 0
