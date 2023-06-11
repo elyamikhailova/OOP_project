@@ -128,6 +128,19 @@ public class NovelController : MonoBehaviour
             case ("faceRight"):
                 Command_FaceRight(data[1]);
                 break;
+            case ("transBackground"):
+                Command_TransLayer(BCFC.instance.background, data[1]);
+                break;
+            case ("transCinematic"):
+                Command_TransLayer(BCFC.instance.cinematic, data[1]);
+                break;
+            case ("transForeground"):
+                Command_TransLayer(BCFC.instance.foreground, data[1]);
+                break;
+            case ("showScene"):
+                Command_ShowScene(data[1]);
+                break;
+
         }
     }
 
@@ -248,6 +261,55 @@ public class NovelController : MonoBehaviour
         }
     }
 
+    void Command_TransLayer(BCFC.LAYER layer, string data)
+    {
+        string[] parameters = data.Split(',');
+
+        string texName = parameters[0];
+        string transTexName = parameters[1];
+        Texture2D tex = texName == "null" ? null : Resources.Load("Images/UI/Backdrops/" + texName) as Texture2D;
+        Texture2D transTex = Resources.Load("Images/TransitionEffects/" + transTexName) as Texture2D;
+
+        float spd = 2f;
+        bool smooth = false;
+
+        for (int i = 2; i < parameters.Length; i++)
+        {
+            string p = parameters[i];
+            float fVal = 0;
+            bool bVal = false;
+            if (float.TryParse(p, out fVal))
+            { spd = fVal; continue; }
+            if (bool.TryParse(p, out bVal))
+            { smooth = bVal; continue; }
+        }
+
+        TransitionMaster.TransitionLayer(layer, tex, transTex, spd, smooth);
+    }
+
+    void Command_ShowScene(string data)
+    {
+        string[] parameters = data.Split(',');
+        bool show = bool.Parse(parameters[0]);
+        string texName = parameters[1];
+        Texture2D transTex = Resources.Load("Images/TransitionEffects/" + texName) as Texture2D;
+
+        float spd = 2f;
+        bool smooth = false;
+
+        for (int i = 2; i < parameters.Length; i++)
+        {
+            string p = parameters[i];
+            float fVal = 0;
+            bool bVal = false;
+            if (float.TryParse(p, out fVal))
+            { spd = fVal; continue; }
+            if (bool.TryParse(p, out bVal))
+            { smooth = bVal; continue; }
+        }
+
+        TransitionMaster.ShowScene(show, spd, smooth, transTex);
+    }
     void Command_Exit(string data)
     {
         string[] parameters = data.Split(',');
@@ -255,7 +317,7 @@ public class NovelController : MonoBehaviour
         float speed = 3;
         bool smooth = false;
 
-        for (int i =1; 1 < parameters.Length; i++)
+        for (int i = 1; 1 < parameters.Length; i++)
         {
             float fVal = 0; bool bVal = false;
             if (float.TryParse(parameters[i], out fVal))

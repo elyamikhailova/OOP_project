@@ -1,3 +1,5 @@
+transBackground(0,blackHole)
+
 setBackground(0)
 
 narrator "Привет! "
@@ -37,3 +39,4 @@ narrator "Привет! "
 +", правой - мальчиков из Верхнего и Среднего миров"
 
 +", левой - младенца из Нижнего."
+showScene(false,star1,1,true)

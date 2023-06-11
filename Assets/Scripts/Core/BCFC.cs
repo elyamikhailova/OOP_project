@@ -24,7 +24,9 @@ public class BCFC : MonoBehaviour
         public GameObject root;
         public GameObject newImageObjectReference;
         public RawImage activeImage;
-        List<RawImage> allImages = new List<RawImage>();
+        public List<RawImage> allImages = new List<RawImage>();
+
+        public Coroutine specialTransitionCoroutine = null;
 
         public void SetTexture(Texture texture)
         {

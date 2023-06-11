@@ -36,7 +36,19 @@ including filenames, should contain spaces.
     *optional parameters (order of parameters does not matter)
     1. speed of transition                                                      ex: set__________(Background_1,1.0)
     2. transition smoothing                                                     ex: set__________(Background_1,1.0,false)
-    
+
+#Special Transitions For Layers and Overlay
+use special transitions instead of normal fading to fade out entire scene or just change images on layer like the background
+    transBackground(imagename,transitionEffect)                                 ex: transBackground(Background_1,spotlight)
+    transCinematic(imagename,transitionEffect)                                  ex: transBackground(Background_1,spotlight)
+    transForeground(imagename,transitionEffect)                                 ex: transBackground(Background_1,spotlight)
+
+    *optional parameters (order does not matter)
+    1. speedOfTransition                                                        ex: trans__________(Background_1,spotlight,5)
+    2. smoothing                                                                ex: trans__________(Background_1,spotlight,true)
+
+#Show or Hide the entire scene with a special trensition to or from black.
+    showScene(true/false,transitionEffect)                                      ex: showScene(false, blackHole)
 #Play Sounds and Music
     playSound(soundName)                                                        ex: playSound(Explosion)
     playMusic(musicName)                                                        ex: playMusic(audio)
