@@ -258,6 +258,7 @@ GameObject:
   - component: {fileID: 164478132}
   - component: {fileID: 164478131}
   - component: {fileID: 164478134}
+  - component: {fileID: 164478135}
   m_Layer: 0
   m_Name: Core
   m_TagString: Untagged
@@ -326,6 +327,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0cb4b5d34647bcb42981b2e0a9e67cc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &164478135
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 164478130}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d9ac7093a5a740c7ba606396d148bf4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  overlayImage: {fileID: 1850393064}
+  transitionMaterialPrefab: {fileID: 2100000, guid: df566846bbbfc4213bc7e97f8224b77e, type: 2}
 --- !u!1 &270698949
 GameObject:
   m_ObjectHideFlags: 0
@@ -424,6 +439,7 @@ RectTransform:
   - {fileID: 919636288}
   - {fileID: 1924205742}
   - {fileID: 477191539}
+  - {fileID: 1850393063}
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -448,14 +464,17 @@ MonoBehaviour:
     root: {fileID: 919636287}
     newImageObjectReference: {fileID: 701103321}
     activeImage: {fileID: 0}
+    allImages: []
   cinematic:
     root: {fileID: 55681025}
     newImageObjectReference: {fileID: 542104178}
     activeImage: {fileID: 0}
+    allImages: []
   foreground:
     root: {fileID: 477191538}
     newImageObjectReference: {fileID: 1325352841}
     activeImage: {fileID: 0}
+    allImages: []
 --- !u!1 &278657187
 GameObject:
   m_ObjectHideFlags: 0
@@ -2489,6 +2508,79 @@ CanvasRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1818606373}
+  m_CullTransparentMesh: 1
+--- !u!1 &1850393062
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1850393063}
+  - component: {fileID: 1850393065}
+  - component: {fileID: 1850393064}
+  m_Layer: 5
+  m_Name: OverlayPanel
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1850393063
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1850393062}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 270698953}
+  m_RootOrder: -1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1850393064
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1850393062}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1344c3c82d62a2a41a3576d8abb8e3ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 2100000, guid: df566846bbbfc4213bc7e97f8224b77e, type: 2}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Texture: {fileID: 2800000, guid: 90aeef990303c449586eb81aa90fae38, type: 3}
+  m_UVRect:
+    serializedVersion: 2
+    x: 0
+    y: 0
+    width: 1
+    height: 1
+--- !u!222 &1850393065
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1850393062}
   m_CullTransparentMesh: 1
 --- !u!1 &1923841748
 GameObject:

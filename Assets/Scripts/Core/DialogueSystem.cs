@@ -49,6 +49,7 @@ public class DialogueSystem : MonoBehaviour
     public string targetSpeech = "";
     Coroutine speaking = null;
     TextArchitect textArchitect = null;
+    public TextArchitect currentArchitect { get { return textArchitect; } }
 
     IEnumerator Speaking(string speech, bool additive, string speaker = "")
     {
@@ -57,7 +58,7 @@ public class DialogueSystem : MonoBehaviour
         string additiveSpeech = additive ? speechText.text : "";
         targetSpeech = additiveSpeech + speech;
 
-        textArchitect = new TextArchitect(speech, additiveSpeech);
+        textArchitect = new TextArchitect(speechText, speech, additiveSpeech);
 
         speakerNameText.text = DetermineSpeaker(speaker);//temporary
 
@@ -70,12 +71,8 @@ public class DialogueSystem : MonoBehaviour
             if (Input.GetKey(KeyCode.Space))
                 textArchitect.skip = true;
 
-            speechText.text = textArchitect.currentText;
-
             yield return new WaitForEndOfFrame();
         }
-        //if skipping stopped the display text from updating correctly, force it to update at the end.
-        speechText.text = textArchitect.currentText;
 
         //text finished
         isWaitingForUserInput = true;

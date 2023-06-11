@@ -4,14 +4,20 @@ using UnityEngine;
 
 public class NovelController : MonoBehaviour
 {
+    public static NovelController instance;
+
     List<string> data = new List<string>();
 
-    int progress = 0;
+    int chapterProgress = 0;
 
+    private void Awake()
+    {
+        instance = this;
+    }
     // Start is called before the first frame update
     void Start()
     {
-        LoadChapterFile("chapter0_start.txt");
+        LoadChapterFile("Chapter1.txt");
     }
 
     // Update is called once per frame
@@ -19,75 +25,171 @@ public class NovelController : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.RightArrow))
         {
-            HandleLine(data[progress]);
-            progress++;
+            Next();
         }
     }
 
     void LoadChapterFile(string filename)
     {
-        data = FileManager.LoadFile(FileManager.savPath + "Resources/Story/" + filename);
-        progress = 0;
+        data = FileManager.LoadFile(FileManager.savPath + "Resources/Story/Chapters/" + filename);
         cachedLastSpeaker = "";
+
+        if (handlingChapterFile != null)
+        {
+            StopCoroutine(handlingChapterFile);
+        }
+        handlingChapterFile = StartCoroutine(HandlingChapterFile());
+
+        Next(); //autostart the chapter
     }
 
-    void HandleLine(string line)
-    {
-        string[] dialogueAndActions = line.Split('"');
 
-        if (dialogueAndActions.Length == 3)
+    Coroutine handlingChapterFile = null;
+
+    public bool isHandlingChapterFile
+    {
+        get
         {
-            HandleDialogue(dialogueAndActions[0], dialogueAndActions[1]);
-            HandleEventsFromLine(dialogueAndActions[2]);
-        }
-        else
-        {
-            HandleEventsFromLine(dialogueAndActions[0]);
+            return handlingChapterFile != null;
         }
     }
 
-    string cachedLastSpeaker = "";
-    void HandleDialogue(string dialogueDetails, string dialogue)
+    bool _next = false;
+
+    public void Next()
     {
-        string speaker = cachedLastSpeaker;
-        bool additive = dialogueDetails.Contains("+");
+        _next = true;
+    }
 
-        if (additive)
-        {
-            dialogueDetails = dialogueDetails.Remove(dialogueDetails.Length - 1);
-        }
+    IEnumerator HandlingChapterFile()
+    {
+        //the progress through the lines inside the chapter
+        chapterProgress = 0;
 
-        if (dialogueDetails.Length > 0)
+        while (chapterProgress < data.Count)
         {
-            if (dialogueDetails[dialogueDetails.Length - 1] == ' ')
+            //need a way of knowing when the next trigger will appear.
+            //there should be multiple types of triggers
+            if (_next)
             {
-                dialogueDetails = dialogueDetails.Remove(dialogueDetails.Length - 1);
+                HandleLine(data[chapterProgress]);
+                chapterProgress++;
+                while (isHandlingLine())
+                {
+                    yield return new WaitForEndOfFrame();
+                }
             }
 
-            speaker = dialogueDetails;
-            cachedLastSpeaker = speaker;
-        }
-
-        if (speaker != "narrator")
-        {
-            Character character = CharacterManager.instance.GetCharacter(speaker);
-            character.Say(dialogue, additive);
-        }
-        else
-        {
-            DialogueSystem.instance.Say(dialogue, speaker, additive);
+            yield return new WaitForEndOfFrame();
         }
     }
 
-    void HandleEventsFromLine(string events)
+    void HandleLine(string rawLine)
     {
-        string[] actions = events.Split(' ');
-
-        foreach (string action in actions)
-        {
-            HandleAction(action);
-        }
+        CLM.LINE line = CLM.Interpret(rawLine);
+        //now we need to handle the line, which requires a loop that handles each segment individually
+        StopHandlingLine();
+        handlingLine = StartCoroutine(HandlingLine(line));
     }
+
+    void StopHandlingLine()
+    {
+        if (isHandlingLine())
+        {
+            StopCoroutine(handlingLine);
+        }
+
+        handlingLine = null;
+    }
+
+    [HideInInspector]
+    public string cachedLastSpeaker = "";
+
+    Coroutine handlingLine = null;
+    public bool isHandlingLine()
+    {
+        return handlingLine != null;
+    }
+
+    IEnumerator HandlingLine(CLM.LINE line)
+    {
+        //since the next trigger controls the flow of a chapter by moving through lines and controls
+        //progression through a line by its segments, it must be reset
+
+        _next = false;
+        int lineProgress = 0; //progress through the segments of a line
+
+        while (lineProgress < line.segments.Count)
+        {
+            _next = false; //reset _next
+            CLM.LINE.SEGMENT segment = line.segments[lineProgress];
+
+            //always run the first segment automatically. But wait for trigger on all proceeding segments
+            if (lineProgress > 0)
+            {
+                if (segment.trigger == CLM.LINE.SEGMENT.TRIGGER.autoDelay)
+                {
+                    for (float timer = segment.autoDelay; timer >= 0; timer = timer - Time.deltaTime)
+                    {
+                        yield return new WaitForEndOfFrame();
+                        if (_next)
+                        {
+                            break;  //termiante loop if player chooses to skip via trigger. Prevents unskippable wait timers.
+                        }
+                    }
+                }
+
+                else
+                {
+                    //wait until the player says to move to the next segment
+                    while (!_next)
+                    {
+                        yield return new WaitForEndOfFrame();
+                    }
+                }
+            }
+            _next = false; //next could have been triggered during an event above
+            //the segment now needs to build and run.
+            segment.Run();
+
+            while (segment.isRunning)
+            {
+                yield return new WaitForEndOfFrame();
+                //allow for auto-completion for skipping purposes, if that is decided
+                //so _next is TRUE if the user is skipping
+                if (_next)
+                {
+                    //if the architect is not already set to skip, set it to skip first
+                    if (!segment.architect.skip)
+                    {
+                        segment.architect.skip = true;
+                    }
+                    //on the next call to skip, force the segment to finish
+                    else
+                    {
+                        segment.forceFinish();
+                    }
+                 
+                }
+
+            }
+            lineProgress++;
+
+            yield return new WaitForEndOfFrame();
+        }
+        //add actions to Line
+        for (int i = 0; i < line.actions.Count; i++)
+        {
+            HandleAction(line.actions[i]);
+        }
+        handlingLine = null;
+
+    }
+
+    
+
+//ACTIONS
+//\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
     void HandleAction(string action)
     {
