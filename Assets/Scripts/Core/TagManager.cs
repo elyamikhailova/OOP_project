@@ -4,6 +4,15 @@ using UnityEngine;
 
 public class TagManager : MonoBehaviour
 {
+    public static void Inject(ref string s)
+    {
+        if (!s.Contains("["))
+            return;
+
+        s = s.Replace("[mainCharNAme]", "Chugdaan");
+
+        s = s.Replace("[curlHolyRelic]", "хз че это");
+    }
 
     public static string[] SplitByTags(string targetText)
     {

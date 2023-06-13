@@ -17,8 +17,8 @@ public class GlobalF : MonoBehaviour
             {
                 if (image.color.a < 1f)
                 {
-                    float spd = fasterInTime ? speed * 2 : speed;
-                    image.color = SetAlpha(image.color, smooth ? Mathf.Lerp(image.color.a, 1f, spd) : Mathf.MoveTowards(image.color.a, 1f, spd));
+                    //float spd = fasterInTime ? speed * 2 : speed;
+                    image.color = SetAlpha(image.color, smooth ? Mathf.Lerp(image.color.a, 1f, speed) : Mathf.MoveTowards(image.color.a, 1f, speed));
                     anyValueChanged = true;
                 }
             }

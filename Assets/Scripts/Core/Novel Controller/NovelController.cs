@@ -169,7 +169,8 @@ public class NovelController : MonoBehaviour
                     {
                         segment.forceFinish();
                     }
-                 
+
+                    _next = false;
                 }
 
             }
@@ -191,7 +192,7 @@ public class NovelController : MonoBehaviour
 //ACTIONS
 //\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-    void HandleAction(string action)
+    public void HandleAction(string action)
     {
         string[] data = action.Split('(', ')');
 

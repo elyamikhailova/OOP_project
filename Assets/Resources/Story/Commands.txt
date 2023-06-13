@@ -3,10 +3,23 @@ Every click event is a separate line in the file. The events below show how to c
 Each line may have multiple actions. Actions on the same line should be delimited by a space. Because of this, no value,
 including filenames, should contain spaces.
 
+#DIALOGUE COMMANDS
 #Make a character speak
     characterName "dialogue"                                                    ex: Chugdaan "bla bla bla"
     + symbol makes dialogue additive to continue from last segment.             ex: Chugdaan +"bla bla"
     No name before dialogue means use last speaker.                             ex: +"bla bla"
+
+#USING DIALOGUE COMMANDS TAG
+    {c} wait for input and clear
+    {a} wait for input and append
+    {w n} wait for n seconds and clear
+    {wa n} wait for n seconds and append
+
+#USING EVENTS INSIDE OF DIALOGUE
+    events are conteined inside of brackets [].                                 ex: "Hello [showScene(true,blur)]everyone!"
+
+    [txtSpd speed,charactersPerFrame] - change text architect speed             ex: "Let's move [txtSpd 15,2]slowly"
+    [/txtSpd] - return architect to normal speed.                               ex: "Let's move [txtSpd 15,2]slowly [/txtSpd]but return to normal speed"
 
 #Change character expression
     setBody(characterName,expressionName)                                       ex: setBody(Chugdaan,sad)

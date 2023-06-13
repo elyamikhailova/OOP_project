@@ -58,11 +58,16 @@ public class DialogueSystem : MonoBehaviour
         string additiveSpeech = additive ? speechText.text : "";
         targetSpeech = additiveSpeech + speech;
 
-        textArchitect = new TextArchitect(speechText, speech, additiveSpeech);
+        if (textArchitect == null)
+            textArchitect = new TextArchitect(speechText, speech, additiveSpeech);
+        else
+            textArchitect.Renew(speech, additiveSpeech);
 
         speakerNameText.text = DetermineSpeaker(speaker);//temporary
 
         speakerNamePanel.SetActive(speakerNameText.text != "");
+
+        speechBox.SetActive(speechText.text != "");
 
         isWaitingForUserInput = false;
 
@@ -107,11 +112,13 @@ public class DialogueSystem : MonoBehaviour
         /// The main panel containing all dialogue related elements on the UI
         /// </summary>
         public GameObject speechPanel;
+        public GameObject speechBox;
         public GameObject speakerNamePanel;
         public TextMeshProUGUI speakerNameText;
         public TextMeshProUGUI speechText;
     }
     public GameObject speechPanel { get { return elements.speechPanel; } }
+    public GameObject speechBox { get { return elements.speechBox; } }
     public GameObject  speakerNamePanel { get { return elements.speakerNamePanel; } }
     public TextMeshProUGUI speakerNameText { get { return elements.speakerNameText; } }
     public TextMeshProUGUI speechText { get { return elements.speechText; } }
