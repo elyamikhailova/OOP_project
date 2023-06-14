@@ -14,9 +14,9 @@ public class FileManager : MonoBehaviour
         get
         {
 #if UNITY_EDITOR
-			return "Assets/";
+            return "Assets/";
 #else
-            return Application.persistentDataPath + "/";
+			return Application.persistentDataPath + "/";
 #endif
         }
     }
@@ -141,7 +141,7 @@ public class FileManager : MonoBehaviour
     /// <returns>The to list.</returns>
     /// <param name="array">Array.</param>
     /// <param name="removeBlankLines">If set to <c>true</c> remove blank lines.</param>
-    static List<string> ArrayToList(string[] array, bool removeBlankLines = true)
+    public static List<string> ArrayToList(string[] array, bool removeBlankLines = true)
     {
         List<string> list = new List<string>();
         for (int i = 0; i < array.Length; i++)
@@ -189,6 +189,7 @@ public class FileManager : MonoBehaviour
         string jsonString = JsonUtility.ToJson(classToSave);
         SaveFile(filePath, jsonString);
     }
+
 
     /// <summary>
     /// Load a class from a JSON file by converting every string to its proper value. 

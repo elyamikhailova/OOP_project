@@ -4,15 +4,17 @@ using UnityEngine;
 
 public class DialogueEvents : MonoBehaviour
 {
+
     /// <summary>
     /// Handle an event on a line segment.
     /// </summary>
-    /// <param name="_event"></param>
-    /// <param name="segment"></param>
+    /// <param name="_event">Event.</param>
+    /// <param name="segment">Segment.</param>
     public static void HandleEvent(string _event, CLM.LINE.SEGMENT segment)
     {
         if (_event.Contains("("))
         {
+            //get all actions delimitted by a comma
             string[] actions = _event.Split(' ');
             for (int i = 0; i < actions.Length; i++)
             {
@@ -32,10 +34,14 @@ public class DialogueEvents : MonoBehaviour
                 segment.architect.speed = 1;
                 segment.architect.charactersPerFrame = 1;
                 break;
-
         }
     }
 
+    /// <summary>
+    /// Change the text speed of the segment's textArchitect.
+    /// </summary>
+    /// <param name="data">Data.</param>
+    /// <param name="seg">Seg.</param>
     static void EVENT_TxtSpd(string data, CLM.LINE.SEGMENT seg)
     {
         string[] parts = data.Split(',');

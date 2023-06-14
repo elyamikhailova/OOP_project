@@ -23,9 +23,7 @@ public class DialogueSystem : MonoBehaviour
         StopSpeaking();
 
         if (additive)
-        {
             speechText.text = targetSpeech;
-        }
 
         speaking = StartCoroutine(Speaking(speech, additive, speaker));
     }
@@ -58,18 +56,19 @@ public class DialogueSystem : MonoBehaviour
         string additiveSpeech = additive ? speechText.text : "";
         targetSpeech = additiveSpeech + speech;
 
+        //create a new architect the very first time. Any time other than that and we renew the architect.
         if (textArchitect == null)
             textArchitect = new TextArchitect(speechText, speech, additiveSpeech);
         else
             textArchitect.Renew(speech, additiveSpeech);
 
         speakerNameText.text = DetermineSpeaker(speaker);//temporary
-
-        speakerNamePanel.SetActive(speakerNameText.text != "");
-
-        speechBox.SetActive(speechText.text != "");
+        speakerNamePane.SetActive(speakerNameText.text != "");
 
         isWaitingForUserInput = false;
+
+        if (isClosed)
+            OpenAllRequirementsForDialogueSystemVisibility(true);
 
         while (textArchitect.isConstructing)
         {
@@ -93,6 +92,9 @@ public class DialogueSystem : MonoBehaviour
         if (s != speakerNameText.text && s != "")
             retVal = (s.ToLower().Contains("narrator")) ? "" : s;
 
+        if (retVal.Contains("*"))
+            retVal = retVal.Remove(0, 1);
+
         return retVal;
     }
 
@@ -101,8 +103,43 @@ public class DialogueSystem : MonoBehaviour
     /// </summary>
     public void Close()
     {
+        print("Close");
         StopSpeaking();
-        speechPanel.SetActive(false);
+
+        for (int i = 0; i < SpeechPanelRequirements.Length; i++)
+        {
+            SpeechPanelRequirements[i].SetActive(false);
+        }
+    }
+
+    public void OpenAllRequirementsForDialogueSystemVisibility(bool v)
+    {
+        for (int i = 0; i < SpeechPanelRequirements.Length; i++)
+        {
+            SpeechPanelRequirements[i].SetActive(v);
+        }
+    }
+
+    public void Open(string speakerName = "", string speech = "")
+    {
+        if (speakerName == "" && speech == "")
+        {
+            OpenAllRequirementsForDialogueSystemVisibility(false);
+            return;
+        }
+
+        OpenAllRequirementsForDialogueSystemVisibility(true);
+
+        speakerNameText.text = speakerName;
+
+        speakerNamePane.SetActive(speakerName != "");
+
+        speechText.text = speech;
+    }
+
+    public bool isClosed
+    {
+        get { return !speechBox.activeInHierarchy; }
     }
 
     [System.Serializable]
@@ -112,14 +149,18 @@ public class DialogueSystem : MonoBehaviour
         /// The main panel containing all dialogue related elements on the UI
         /// </summary>
         public GameObject speechPanel;
-        public GameObject speechBox;
-        public GameObject speakerNamePanel;
+        public GameObject speakerNamePane;
         public TextMeshProUGUI speakerNameText;
         public TextMeshProUGUI speechText;
     }
     public GameObject speechPanel { get { return elements.speechPanel; } }
-    public GameObject speechBox { get { return elements.speechBox; } }
-    public GameObject  speakerNamePanel { get { return elements.speakerNamePanel; } }
     public TextMeshProUGUI speakerNameText { get { return elements.speakerNameText; } }
     public TextMeshProUGUI speechText { get { return elements.speechText; } }
+    public GameObject speakerNamePane { get { return elements.speakerNamePane; } }
+
+    /// <summary>
+    /// All objects of this array must be enabled or disabled depending on the status of the dialogue system
+    /// </summary>
+    public GameObject[] SpeechPanelRequirements;
+    public GameObject speechBox;
 }

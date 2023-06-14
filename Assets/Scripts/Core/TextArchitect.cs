@@ -48,18 +48,19 @@ public class TextArchitect
         tmpro.text = "";
         tmpro.text += preText;
 
-        tmpro.ForceMeshUpdate();
+        tmpro.ForceMeshUpdate(false);
         TMP_TextInfo inf = tmpro.textInfo;
         int vis = inf.characterCount;
 
         tmpro.text += targetText;
 
-        tmpro.ForceMeshUpdate();
+        tmpro.ForceMeshUpdate(false);
         inf = tmpro.textInfo;
         int max = inf.characterCount;
 
         tmpro.maxVisibleCharacters = vis;
 
+        //temporary cache of cpf per construction sequence.
         int cpf = charactersPerFrame;
 
         while (vis < max)
@@ -111,19 +112,20 @@ public class TextArchitect
     }
 
     /// <summary>
-	/// Force the architect to finish the text right now.
-	/// </summary>
-	public void forceFinish()
+    /// Force the architect to finish the text right now.
+    /// </summary>
+    public void ForceFinish()
     {
         tmpro.maxVisibleCharacters = tmpro.text.Length;
         Terminate();
     }
 
     /// <summary>
-    /// Renew this architect
+    /// Renew this architect by giving it a new target display, overriding the old one. Allows the same architect to be used multiple times rather than 
+    /// creating a new one.
     /// </summary>
-    /// <param name="targ"></param>
-    /// <param name="pre"></param>
+    /// <param name="targ">Targ.</param>
+    /// <param name="pre">Pre.</param>
     public void Renew(string targ, string pre)
     {
         targetText = targ;
@@ -147,6 +149,7 @@ public class TextArchitect
 
         tmpro.maxVisibleCharacters = tmpro.text.Length;
 
+        //update the target of the dialogue system only if this architect is being used directly by the dialogue system.
         if (tmpro == DialogueSystem.instance.speechText)
             DialogueSystem.instance.targetSpeech = text;
     }

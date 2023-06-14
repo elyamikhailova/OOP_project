@@ -47,7 +47,7 @@ public class characterTesting : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.B))
         {
             if (Input.GetKey(KeyCode.T))
-                Chugdaan.TransitionBody(Chugdaan.GetSprie(CharacterManager.characterBody.sad), speed, smoothTransition);
+                Chugdaan.TransitionBody(Chugdaan.GetSprite(CharacterManager.characterBody.sad), speed, smoothTransition);
             else
                 Chugdaan.SetBody(bodyIndex);
         }

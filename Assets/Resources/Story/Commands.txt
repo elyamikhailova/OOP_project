@@ -15,6 +15,19 @@ including filenames, should contain spaces.
     {w n} wait for n seconds and clear
     {wa n} wait for n seconds and append
 
+#USING CHOICES AS EVENTS
+  Every choice should be on its own line. A choice is not a regular event so it is not paired with dialogue.
+  a choice begins with the word 'choice' to signify it is a choice and not a normal line.
+  after choice have the choice title in quotes.
+  then inside of squiggly brackets we have our choices in quotes followed by a single command to be executed if that choice is made.
+                                                                                ex: choice "How are you doing?"
+                                                                                    {
+                                                                                      "Fine"
+                                                                                        Chugdaan "That is good to hear."
+                                                                                      "Terrible"
+                                                                                        Chugdann "Oh? Why is that?"
+                                                                                    }
+
 #USING EVENTS INSIDE OF DIALOGUE
     events are conteined inside of brackets [].                                 ex: "Hello [showScene(true,blur)]everyone!"
 

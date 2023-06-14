@@ -6,245 +6,421 @@ public class NovelController : MonoBehaviour
 {
     public static NovelController instance;
 
+    /// <summary> The lines of data loaded directly from a chapter file.	/// </summary>
     List<string> data = new List<string>();
 
-    int chapterProgress = 0;
-
-    private void Awake()
+    void Awake()
     {
         instance = this;
     }
-    // Start is called before the first frame update
+
+    int activeGameFileNumber = 0;
+    GAMEFILE activeGameFile = null;
+    string activeChapterFile = "";
+
+    // Use this for initialization
     void Start()
     {
-        LoadChapterFile("Chapter1.txt");
+        LoadGameFile(0);
     }
+
+    public void LoadGameFile(int gameFileNumber)
+    {
+        activeGameFileNumber = gameFileNumber;
+
+        string filePath = FileManager.savPath + "Resources/gameFiles/" + gameFileNumber.ToString() + ".txt";
+
+        if (!System.IO.File.Exists(filePath))
+        {
+            FileManager.SaveJSON(filePath, new GAMEFILE());
+        }
+
+        activeGameFile = FileManager.LoadJSON<GAMEFILE>(filePath);
+
+        //Load the file
+        data = FileManager.LoadFile(FileManager.savPath + "Resources/Story/" + activeGameFile.chapterName);
+        activeChapterFile = activeGameFile.chapterName;
+        cachedLastSpeaker = activeGameFile.cachedLastSpeaker;
+
+        DialogueSystem.instance.Open(activeGameFile.currentTextSystemSpeakerNameText, activeGameFile.currentTextSystemDisplayText);
+
+        //Load all characters back into the scene
+        for (int i = 0; i < activeGameFile.charactersInScene.Count; i++)
+        {
+            GAMEFILE.CHARACTERDATA data = activeGameFile.charactersInScene[i];
+            Character character = CharacterManager.instance.CreateCharacter(data.characterName, data.enabled);
+            character.SetBody(data.bodyExpression);
+            character.SetExpression(data.facialExpression);
+            if (data.facingLeft)
+                character.FaceLeft();
+            else
+                character.FaceRight();
+            character.SetPosition(data.position);
+        }
+
+        //Load the layer images back into the scene
+        if (activeGameFile.background != null)
+            BCFC.instance.background.SetTexture(activeGameFile.background);
+        if (activeGameFile.cinematic != null)
+            BCFC.instance.cinematic.SetTexture(activeGameFile.cinematic);
+        if (activeGameFile.foreground != null)
+            BCFC.instance.foreground.SetTexture(activeGameFile.foreground);
+
+        //start the music back up
+        if (activeGameFile.music != null)
+            AudioManager.instance.PlaySong(activeGameFile.music);
+
+        if (handlingChapterFile != null)
+            StopCoroutine(handlingChapterFile);
+        handlingChapterFile = StartCoroutine(HandlingChapterFile());
+
+        chapterProgress = activeGameFile.chapterProgress;
+    }
+
+    public void SaveGameFile()
+    {
+        string filePath = FileManager.savPath + "Resources/gameFiles/" + activeGameFileNumber.ToString() + ".txt";
+
+        activeGameFile.chapterName = activeChapterFile;
+        activeGameFile.chapterProgress = chapterProgress;
+        activeGameFile.cachedLastSpeaker = cachedLastSpeaker;
+
+        activeGameFile.currentTextSystemSpeakerNameText = DialogueSystem.instance.speakerNameText.text;
+        activeGameFile.currentTextSystemDisplayText = DialogueSystem.instance.speechText.text;
+
+        //get all the characters and save their stats.
+        activeGameFile.charactersInScene.Clear();
+        for (int i = 0; i < CharacterManager.instance.characters.Count; i++)
+        {
+            Character character = CharacterManager.instance.characters[i];
+            GAMEFILE.CHARACTERDATA data = new GAMEFILE.CHARACTERDATA(character);
+            activeGameFile.charactersInScene.Add(data);
+        }
+
+        //save the layers to disk
+        BCFC b = BCFC.instance;
+        activeGameFile.background = b.background.activeImage != null ? b.background.activeImage.texture : null;
+        activeGameFile.cinematic = b.cinematic.activeImage != null ? b.cinematic.activeImage.texture : null;
+        activeGameFile.foreground = b.foreground.activeImage != null ? b.foreground.activeImage.texture : null;
+
+        //save the music to disk
+        activeGameFile.music = AudioManager.activeSong != null ? AudioManager.activeSong.clip : null;
+
+        FileManager.SaveJSON(filePath, activeGameFile);
+    }
+
 
     // Update is called once per frame
     void Update()
     {
+        //testing
         if (Input.GetKeyDown(KeyCode.RightArrow))
         {
             Next();
         }
+
+        //testing as well
+        if (Input.GetKeyDown(KeyCode.S))
+        {
+            SaveGameFile();
+        }
     }
 
-    void LoadChapterFile(string filename)
+    public void LoadChapterFile(string fileName)
     {
-        data = FileManager.LoadFile(FileManager.savPath + "Resources/Story/Chapters/" + filename);
+        activeChapterFile = fileName;
+
+        data = FileManager.LoadFile(FileManager.savPath + "Resources/Story/" + fileName);
         cachedLastSpeaker = "";
 
         if (handlingChapterFile != null)
-        {
             StopCoroutine(handlingChapterFile);
-        }
         handlingChapterFile = StartCoroutine(HandlingChapterFile());
 
-        Next(); //autostart the chapter
+        //auto start the chapter.
+        Next();
     }
 
-
-    Coroutine handlingChapterFile = null;
-
-    public bool isHandlingChapterFile
-    {
-        get
-        {
-            return handlingChapterFile != null;
-        }
-    }
-
+    /// <summary>
+    /// Trigger that advances the progress through a chapter file.
+    /// </summary>
     bool _next = false;
-
+    /// <summary>
+    /// Procede to the next line of a chapter or finish the line right now.
+    /// </summary>
     public void Next()
     {
         _next = true;
     }
 
+    public bool isHandlingChapterFile { get { return handlingChapterFile != null; } }
+    Coroutine handlingChapterFile = null;
+    [HideInInspector] public int chapterProgress = 0;
     IEnumerator HandlingChapterFile()
     {
-        //the progress through the lines inside the chapter
+        //the progress through the lines in this chapter.
         chapterProgress = 0;
 
         while (chapterProgress < data.Count)
         {
-            //need a way of knowing when the next trigger will appear.
-            //there should be multiple types of triggers
+            //we need a way of knowing when the player wants to advance. We need a "next" trigger. Not just a keypress. But something that can be triggerd
+            //by a click or a keypress
             if (_next)
             {
-                HandleLine(data[chapterProgress]);
-                chapterProgress++;
-                while (isHandlingLine())
+                string line = data[chapterProgress];
+                //this is a choice
+                if (line.StartsWith("choice"))
                 {
-                    yield return new WaitForEndOfFrame();
+                    yield return HandlingChoiceLine(line);
+                    chapterProgress++;
+                }
+                //this is a normal line of dialogue and actions.
+                else
+                {
+                    HandleLine(line);
+                    chapterProgress++;
+                    while (isHandlingLine)
+                    {
+                        yield return new WaitForEndOfFrame();
+                    }
                 }
             }
-
             yield return new WaitForEndOfFrame();
+        }
+
+        handlingChapterFile = null;
+    }
+
+    IEnumerator HandlingChoiceLine(string line)
+    {
+        string title = line.Split('"')[1];
+        List<string> choices = new List<string>();
+        List<string> actions = new List<string>();
+
+        bool gatheringChoices = true;
+        while (gatheringChoices)
+        {
+            chapterProgress++;
+            line = data[chapterProgress];
+
+            if (line == "{")
+                continue;
+
+            line = line.Replace("    ", "");//remove the tabs that have become quad spaces.
+
+            if (line != "}")
+            {
+                choices.Add(line.Split('"')[1]);
+                actions.Add(data[chapterProgress + 1].Replace("    ", ""));
+                chapterProgress++;
+            }
+            else
+            {
+                gatheringChoices = false;
+            }
+        }
+
+        //display choices
+        if (choices.Count > 0)
+        {
+            ChoiceScreen.Show(title, choices.ToArray()); yield return new WaitForEndOfFrame();
+            while (ChoiceScreen.isWaitingForChoiceToBeMade)
+                yield return new WaitForEndOfFrame();
+
+            //choice is made. execute the paired action.
+            string action = actions[ChoiceScreen.lastChoiceMade.index];
+            HandleLine(action);
+
+            while (isHandlingLine)
+                yield return new WaitForEndOfFrame();
+        }
+        else
+        {
+            Debug.LogError("Invalid choice operation. No choices were found.");
         }
     }
 
     void HandleLine(string rawLine)
     {
         CLM.LINE line = CLM.Interpret(rawLine);
-        //now we need to handle the line, which requires a loop that handles each segment individually
+
+        //now we need to handle the line. This requires a loop full of waiting for input since the line consists of multiple segments that have to be
+        //handled individually.
         StopHandlingLine();
         handlingLine = StartCoroutine(HandlingLine(line));
     }
 
     void StopHandlingLine()
     {
-        if (isHandlingLine())
-        {
+        if (isHandlingLine)
             StopCoroutine(handlingLine);
-        }
-
         handlingLine = null;
     }
 
     [HideInInspector]
+    /// <summary> Used as a fallback when no speaker is given.</summary>
     public string cachedLastSpeaker = "";
 
+    public bool isHandlingLine { get { return handlingLine != null; } }
     Coroutine handlingLine = null;
-    public bool isHandlingLine()
-    {
-        return handlingLine != null;
-    }
-
     IEnumerator HandlingLine(CLM.LINE line)
     {
-        //since the next trigger controls the flow of a chapter by moving through lines and controls
-        //progression through a line by its segments, it must be reset
-
+        //since the "next" trigger controls the flow of a chapter by moving through lines and yet also controls the progression through a line by
+        //its segments, it must be reset.
         _next = false;
-        int lineProgress = 0; //progress through the segments of a line
+        int lineProgress = 0;//progress through the segments of a line.
 
         while (lineProgress < line.segments.Count)
         {
-            _next = false; //reset _next
+            _next = false;//reset at the start of each loop.
             CLM.LINE.SEGMENT segment = line.segments[lineProgress];
 
-            //always run the first segment automatically. But wait for trigger on all proceeding segments
+            //always run the first segment automatically. But wait for the trigger on all proceding segments.
             if (lineProgress > 0)
             {
                 if (segment.trigger == CLM.LINE.SEGMENT.TRIGGER.autoDelay)
                 {
-                    for (float timer = segment.autoDelay; timer >= 0; timer = timer - Time.deltaTime)
+                    for (float timer = segment.autoDelay; timer >= 0; timer -= Time.deltaTime)
                     {
                         yield return new WaitForEndOfFrame();
                         if (_next)
-                        {
-                            break;  //termiante loop if player chooses to skip via trigger. Prevents unskippable wait timers.
-                        }
+                            break;//allow the termination of a delay when "next" is triggered. Prevents unskippable wait timers.
                     }
                 }
-
                 else
                 {
-                    //wait until the player says to move to the next segment
                     while (!_next)
-                    {
-                        yield return new WaitForEndOfFrame();
-                    }
+                        yield return new WaitForEndOfFrame();//wait until the player says move to the next segment.
                 }
             }
-            _next = false; //next could have been triggered during an event above
+            _next = false;//next could have been triggered during an event above.
+
             //the segment now needs to build and run.
             segment.Run();
 
             while (segment.isRunning)
             {
                 yield return new WaitForEndOfFrame();
-                //allow for auto-completion for skipping purposes, if that is decided
-                //so _next is TRUE if the user is skipping
+                //allow for auto completion of the current segment for skipping purposes.
                 if (_next)
                 {
-                    //if the architect is not already set to skip, set it to skip first
+                    //rapidly complete the text on first advance, force it to finish on the second.
                     if (!segment.architect.skip)
-                    {
                         segment.architect.skip = true;
-                    }
-                    //on the next call to skip, force the segment to finish
                     else
-                    {
-                        segment.forceFinish();
-                    }
-
+                        segment.ForceFinish();
                     _next = false;
                 }
-
             }
+
             lineProgress++;
 
             yield return new WaitForEndOfFrame();
         }
-        //add actions to Line
+
+        //Line is finished. Handle all the actions set at the end of the line.
         for (int i = 0; i < line.actions.Count; i++)
         {
             HandleAction(line.actions[i]);
         }
-        handlingLine = null;
 
+        handlingLine = null;
     }
 
-    
-
-//ACTIONS
-//\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-
+    //ACTIONS
+    //\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     public void HandleAction(string action)
     {
+        //print("execute command - " + action);
         string[] data = action.Split('(', ')');
-
         switch (data[0])
         {
-            case ("setBackground"):
+            case "enter":
+                Command_Enter(data[1]);
+                break;
+
+            case "exit":
+                Command_Exit(data[1]);
+                break;
+
+            case "setBackground":
                 Command_SetLayerImage(data[1], BCFC.instance.background);
                 break;
-            case ("setCinematic"):
+
+            case "setCinematic":
                 Command_SetLayerImage(data[1], BCFC.instance.cinematic);
                 break;
-            case ("setForeground"):
+
+            case "setForeground":
                 Command_SetLayerImage(data[1], BCFC.instance.foreground);
                 break;
-            case ("playSound"):
+
+            case "playSound":
                 Command_PlaySound(data[1]);
                 break;
-            case ("playMusic"):
+
+            case "playMusic":
                 Command_PlayMusic(data[1]);
                 break;
-            case ("move"):
+
+            case "move":
                 Command_MoveCharacter(data[1]);
                 break;
-            case ("setPosition"):
+
+            case "setPosition":
                 Command_SetPosition(data[1]);
                 break;
-            case ("setBody"):
+
+            case "setFace":
+                Command_SetFace(data[1]);
+                break;
+
+            case "setBody":
                 Command_SetBody(data[1]);
                 break;
-            case ("flip"):
+
+            case "flip":
                 Command_Flip(data[1]);
                 break;
-            case ("faceLeft"):
+
+            case "faceLeft":
                 Command_FaceLeft(data[1]);
                 break;
-            case ("faceRight"):
+
+            case "faceRight":
                 Command_FaceRight(data[1]);
                 break;
-            case ("transBackground"):
+
+            case "transBackground":
                 Command_TransLayer(BCFC.instance.background, data[1]);
                 break;
-            case ("transCinematic"):
+
+            case "transCinematic":
                 Command_TransLayer(BCFC.instance.cinematic, data[1]);
                 break;
-            case ("transForeground"):
+
+            case "transForeground":
                 Command_TransLayer(BCFC.instance.foreground, data[1]);
                 break;
-            case ("showScene"):
+
+            case "showScene":
                 Command_ShowScene(data[1]);
                 break;
 
+            case "Load":
+                Command_Load(data[1]);
+                break;
+
+            case "next":
+                Next();
+                break;
         }
+
+    }
+
+    void Command_Load(string chapterName)
+    {
+        NovelController.instance.LoadChapterFile(chapterName);
     }
 
     void Command_SetLayerImage(string data, BCFC.LAYER layer)
@@ -261,12 +437,10 @@ public class NovelController : MonoBehaviour
             {
                 float fVal = 0;
                 bool bVal = false;
-
                 if (float.TryParse(p, out fVal))
                 {
                     spd = fVal; continue;
                 }
-
                 if (bool.TryParse(p, out bVal))
                 {
                     smooth = bVal; continue;
@@ -280,6 +454,7 @@ public class NovelController : MonoBehaviour
     void Command_PlaySound(string data)
     {
         AudioClip clip = Resources.Load("Audio/SFX/" + data) as AudioClip;
+
         if (clip != null)
             AudioManager.instance.PlaySFX(clip);
         else
@@ -288,11 +463,16 @@ public class NovelController : MonoBehaviour
 
     void Command_PlayMusic(string data)
     {
-        AudioClip clip = Resources.Load("Audio/Music/" + data) as AudioClip;
-        if (clip != null)
-            AudioManager.instance.PlaySong(clip);
+        if (data.ToLower() == "null")
+        {
+            AudioManager.instance.PlaySong(null);
+        }
         else
-            Debug.LogError("Clip does not exist - " + data);
+        {
+            AudioClip clip = Resources.Load("Audio/Music/" + data) as AudioClip;
+
+            AudioManager.instance.PlaySong(clip);
+        }
     }
 
     void Command_MoveCharacter(string data)
@@ -301,7 +481,7 @@ public class NovelController : MonoBehaviour
         string character = parameters[0];
         float locationX = float.Parse(parameters[1]);
         float locationY = parameters.Length >= 3 ? float.Parse(parameters[2]) : 0;
-        float speed = parameters.Length >= 4 ? float.Parse(parameters[3]) : 5f;
+        float speed = parameters.Length >= 4 ? float.Parse(parameters[3]) : 7f;
         bool smooth = parameters.Length == 5 ? bool.Parse(parameters[4]) : true;
 
         Character c = CharacterManager.instance.GetCharacter(character);
@@ -313,10 +493,25 @@ public class NovelController : MonoBehaviour
         string[] parameters = data.Split(',');
         string character = parameters[0];
         float locationX = float.Parse(parameters[1]);
-        float locationY = float.Parse(parameters[2]);
+        float locationY = parameters.Length == 3 ? float.Parse(parameters[2]) : 0;
 
         Character c = CharacterManager.instance.GetCharacter(character);
         c.SetPosition(new Vector2(locationX, locationY));
+
+        //print("set " + c.characterName + " position to " + locationX + "," + locationY);
+    }
+
+    void Command_SetFace(string data)
+    {
+        string[] parameters = data.Split(',');
+        string character = parameters[0];
+        string expression = parameters[1];
+        float speed = parameters.Length == 3 ? float.Parse(parameters[2]) : 3f;
+
+        Character c = CharacterManager.instance.GetCharacter(character);
+        Sprite sprite = c.GetSprite(expression);
+
+        c.TransitionExpression(sprite, speed, false);
     }
 
     void Command_SetBody(string data)
@@ -324,16 +519,17 @@ public class NovelController : MonoBehaviour
         string[] parameters = data.Split(',');
         string character = parameters[0];
         string expression = parameters[1];
-        float speed = parameters.Length == 3 ? float.Parse(parameters[2]) : 5f;
+        float speed = parameters.Length == 3 ? float.Parse(parameters[2]) : 3f;
 
         Character c = CharacterManager.instance.GetCharacter(character);
-        Sprite sprite = c.GetSprie(expression);
+        Sprite sprite = c.GetSprite(expression);
+
         c.TransitionBody(sprite, speed, false);
     }
 
     void Command_Flip(string data)
     {
-        string[] characters = data.Split(',');
+        string[] characters = data.Split(';');
 
         foreach (string s in characters)
         {
@@ -344,7 +540,7 @@ public class NovelController : MonoBehaviour
 
     void Command_FaceLeft(string data)
     {
-        string[] characters = data.Split(',');
+        string[] characters = data.Split(';');
 
         foreach (string s in characters)
         {
@@ -355,12 +551,66 @@ public class NovelController : MonoBehaviour
 
     void Command_FaceRight(string data)
     {
-        string[] characters = data.Split(',');
+        string[] characters = data.Split(';');
 
         foreach (string s in characters)
         {
             Character c = CharacterManager.instance.GetCharacter(s);
             c.FaceRight();
+        }
+    }
+
+    void Command_Exit(string data)
+    {
+        string[] parameters = data.Split(',');
+        string[] characters = parameters[0].Split(';');
+        float speed = 3;
+        bool smooth = false;
+        for (int i = 1; i < parameters.Length; i++)
+        {
+            float fVal = 0; bool bVal = false;
+            if (float.TryParse(parameters[i], out fVal))
+            { speed = fVal; continue; }
+            if (bool.TryParse(parameters[i], out bVal))
+            { smooth = bVal; continue; }
+        }
+
+        foreach (string s in characters)
+        {
+            Character c = CharacterManager.instance.GetCharacter(s);
+            c.FadeOut(speed, smooth);
+        }
+    }
+
+    void Command_Enter(string data)
+    {
+        string[] parameters = data.Split(',');
+        string[] characters = parameters[0].Split(';');
+        float speed = 3;
+        bool smooth = false;
+        for (int i = 1; i < parameters.Length; i++)
+        {
+            float fVal = 0; bool bVal = false;
+            if (float.TryParse(parameters[i], out fVal))
+            { speed = fVal; continue; }
+            if (bool.TryParse(parameters[i], out bVal))
+            { smooth = bVal; continue; }
+        }
+
+        foreach (string s in characters)
+        {
+            Character c = CharacterManager.instance.GetCharacter(s, true, false);
+            if (!c.enabled)
+            {
+                c.renderers.bodyRenderer.color = new Color(1, 1, 1, 0);
+                c.renderers.expressionRenderer.color = new Color(1, 1, 1, 0);
+                c.enabled = true;
+
+                c.TransitionBody(c.renderers.bodyRenderer.sprite, speed, smooth);
+                c.TransitionExpression(c.renderers.expressionRenderer.sprite, speed, smooth);
+            }
+            else
+                c.FadeIn(speed, smooth);
         }
     }
 
@@ -396,7 +646,6 @@ public class NovelController : MonoBehaviour
         bool show = bool.Parse(parameters[0]);
         string texName = parameters[1];
         Texture2D transTex = Resources.Load("Images/TransitionEffects/" + texName) as Texture2D;
-
         float spd = 2f;
         bool smooth = false;
 
@@ -412,68 +661,5 @@ public class NovelController : MonoBehaviour
         }
 
         TransitionMaster.ShowScene(show, spd, smooth, transTex);
-    }
-    void Command_Exit(string data)
-    {
-        string[] parameters = data.Split(',');
-        string[] characters = parameters[0].Split(';');
-        float speed = 3;
-        bool smooth = false;
-
-        for (int i = 1; 1 < parameters.Length; i++)
-        {
-            float fVal = 0; bool bVal = false;
-            if (float.TryParse(parameters[i], out fVal))
-            {
-                speed = fVal; continue;
-            }
-            if (bool.TryParse(parameters[i], out bVal))
-            {
-                smooth = bVal; continue;
-            }
-        }
-
-        foreach (string s in characters)
-        {
-            Character c = CharacterManager.instance.GetCharacter(s);
-            c.FadeOut(speed, smooth);
-        }
-    }
-
-    void Command_Enter(string data)
-    {
-        string[] parameters = data.Split(',');
-        string[] characters = parameters[0].Split(';');
-        float speed = 3;
-        bool smooth = false;
-
-        for (int i = 1; 1 < parameters.Length; i++)
-        {
-            float fVal = 0; bool bVal = false;
-            if (float.TryParse(parameters[i], out fVal))
-            {
-                speed = fVal; continue;
-            }
-            if (bool.TryParse(parameters[i], out bVal))
-            {
-                smooth = bVal; continue;
-            }
-        }
-
-        foreach (string s in characters)
-        {
-            Character c = CharacterManager.instance.GetCharacter(s, true, false);
-            if (!c.enabled)
-            {
-                c.renderers.bodyRenderer.color = new Color(1, 1, 1, 0);
-                c.enabled = true;
-
-                c.TransitionBody(c.renderers.bodyRenderer.sprite, speed, smooth);
-            }
-            else
-            {
-                c.FadeIn(speed, smooth);
-            }
-        }
     }
 }

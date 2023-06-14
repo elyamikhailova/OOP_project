@@ -4,144 +4,138 @@ using UnityEngine;
 
 public class CLM : MonoBehaviour
 {
+
     public static LINE Interpret(string rawLine)
     {
         return new LINE(rawLine);
     }
+
     public class LINE
     {
-        public string speaker = ""; // who is speaking on this line
+        /// <summary>Who is speaking on this line. </summary>
+        public string speaker = "";
 
-        public List<SEGMENT> segments = new List<SEGMENT>(); // rawline that is split into segments
-
-        public List<string> actions = new List<string>(); // actions in the rawline
+        /// <summary>The segments on this line that make up each piece of dialogue. </summary>
+        public List<SEGMENT> segments = new List<SEGMENT>();
+        /// <summary> All the actions to be called during or at the end of this line. </summary>
+        public List<string> actions = new List<string>();
 
         public string lastSegmentsWholeDialogue = "";
+
         public LINE(string rawLine)
         {
-            //Debug.Log(rawLine);
             string[] dialogueAndActions = rawLine.Split('"');
-            char actionSpliiter = ' ';
-            string[] actionArray = dialogueAndActions.Length == 3 ? dialogueAndActions[2].Split(actionSpliiter) : dialogueAndActions[0].Split(actionSpliiter);
+            char actionSplitter = ' ';
+            string[] actionsArr = dialogueAndActions.Length == 3 ? dialogueAndActions[2].Split(actionSplitter) : dialogueAndActions[0].Split(actionSplitter);
 
-            //Debug.Log(dialogueAndActions[0]);
-            //Debug.Log(dialogueAndActions.Length);
-
-            if (dialogueAndActions.Length == 3) //contains dialogue
+            if (dialogueAndActions.Length == 3)//contains dialogue
             {
                 speaker = dialogueAndActions[0] == "" ? NovelController.instance.cachedLastSpeaker : dialogueAndActions[0];
                 if (speaker[speaker.Length - 1] == ' ')
-                {
                     speaker = speaker.Remove(speaker.Length - 1);
-                }
+
+                //cache the speaker
                 NovelController.instance.cachedLastSpeaker = speaker;
-                //segment dialog
-                SegmentDialog(dialogueAndActions[1]);
+
+                //segment the dialogue.
+                SegmentDialogue(dialogueAndActions[1]);
             }
-            //else
+
+            //now handle actions. Just capture all actions into the line. They will be handled later.
+            for (int i = 0; i < actionsArr.Length; i++)
             {
-                //for each action, place it inside the action list
-                for (int i = 0; i < actionArray.Length; i++)
-                {
-                    actions.Add(actionArray[i]);
-                }
+                actions.Add(actionsArr[i]);
             }
+
+            //the line is now segmented, the actions are loaded, and it is ready to be used.
         }
 
-        void SegmentDialog(string dialogue)
+        /// <summary>
+        /// Segments a line of dialogue into a list of individual parts separated by input delays.
+        /// </summary>
+        /// <param name="dialogue">Dialogue.</param>
+        void SegmentDialogue(string dialogue)
         {
             segments.Clear();
             string[] parts = dialogue.Split('{', '}');
 
             for (int i = 0; i < parts.Length; i++)
             {
-                //segmenters/commands will always be odd indexted, dialogue will always be even
                 SEGMENT segment = new SEGMENT();
-                //segments.Add(segment);
                 bool isOdd = i % 2 != 0;
+
+                //commands are odd indexed. Dialogue is always even.
                 if (isOdd)
                 {
                     //commands and data are split by spaces
                     string[] commandData = parts[i].Split(' ');
-                    //by input we mean user input
                     switch (commandData[0])
                     {
-                        case "c": //wait for input and clear
-                            segment.trigger = SEGMENT.TRIGGER.WaitforClick;
+                        case "c"://wait for input and clear.
+                            segment.trigger = SEGMENT.TRIGGER.waitClickClear;
                             break;
-                        case "a": //wait for input and append(additive)
-                            segment.trigger = SEGMENT.TRIGGER.WaitforClick;
-                            //appending requires fetching the text of the previous segment for the preText
-                            segment.preText = segments.Count > 0 ? segments[segments.Count-1].dialogue : "";
+                        case "a"://wait for input and append.
+                            segment.trigger = SEGMENT.TRIGGER.waitClick;
+                            //appending requires fetching the text of the previous segment to be the pre text
+                            segment.pretext = segments.Count > 0 ? segments[segments.Count - 1].dialogue : "";
                             break;
-                        case "w": //wait for set time and clear
+                        case "w"://wait for set time and clear.
                             segment.trigger = SEGMENT.TRIGGER.autoDelay;
                             segment.autoDelay = float.Parse(commandData[1]);
                             break;
-                        case "wa"://wait for set time and append
+                        case "wa"://wait for set time and append.
                             segment.trigger = SEGMENT.TRIGGER.autoDelay;
                             segment.autoDelay = float.Parse(commandData[1]);
-                            segment.preText = segments.Count > 0 ? segments[segments.Count - 1].dialogue : "";
+                            //appending requires fetching the text of the previous segment to be the pre text
+                            segment.pretext = segments.Count > 0 ? segments[segments.Count - 1].dialogue : "";
                             break;
                     }
-                    i++;
-                    //increment so we move past the command and to the next bit of dialogue
+                    i++;//increment so we move past the command and to the next bit of dialogue.
                 }
+
                 segment.dialogue = parts[i];
-                //lastDialogue = parts[i];
                 segment.line = this;
+
                 segments.Add(segment);
             }
-        }
-
-        public string printCurrentSegments()
-        {
-            string segText = "";
-
-            foreach (SEGMENT s in segments)
-            {
-                segText = segText + s.dialogue + "\n";
-            }
-
-            return segText;
         }
 
         public class SEGMENT
         {
             public LINE line;
             public string dialogue = "";
-            public string preText = "";
-
-            //enumerations are like constants
-            public enum TRIGGER{WaitforClick, waitClickClear, autoDelay}
-            public TRIGGER trigger = TRIGGER.WaitforClick;
+            public string pretext = "";
+            public enum TRIGGER { waitClick, waitClickClear, autoDelay }
+            public TRIGGER trigger = TRIGGER.waitClickClear;
 
             public float autoDelay = 0;
 
+            /// <summary>
+            /// Run the segment and watch the dialogue build and display on the screen.
+            /// </summary>
             public void Run()
             {
                 if (running != null)
-                {
                     NovelController.instance.StopCoroutine(running);
-                }
                 running = NovelController.instance.StartCoroutine(Running());
             }
 
-            public bool isRunning{ get { return running != null; } }
+            public bool isRunning { get { return running != null; } }
             Coroutine running = null;
             public TextArchitect architect = null;
-            List<string> allCurrentlyExecutedEvents = new List<string> ();
-
+            List<string> allCurrentlyExecutedEvents = new List<string>();
             IEnumerator Running()
             {
-                allCurrentlyExecutedEvents.Clear ();
-
+                allCurrentlyExecutedEvents.Clear();
+                //take care of any tags that must be injected into the dialogue before we worry about events.
                 TagManager.Inject(ref dialogue);
 
+                //split the dialogue by the event characters.
                 string[] parts = dialogue.Split('[', ']');
 
                 for (int i = 0; i < parts.Length; i++)
                 {
+                    //events will always be odd indexed. Execute an event.
                     bool isOdd = i % 2 != 0;
                     if (isOdd)
                     {
@@ -152,16 +146,22 @@ public class CLM : MonoBehaviour
 
                     string targDialogue = parts[i];
 
-                    if (line.speaker != "narrator")
+                    if (line.speaker != "narrator" && !line.speaker.Contains("*"))
                     {
                         Character character = CharacterManager.instance.GetCharacter(line.speaker);
-                        character.Say(targDialogue, i > 0 ? true : preText != "");
+                        //This is a valid character that can show up on the screen. Get the character and make them speak.
+                        //if (character != null)
+                        character.Say(targDialogue, i > 0 ? true : pretext != "");
+                        //This is a character that has no images to display. Only show the name and the dialogue.
+                        //else
+                        //DialogueSystem.instance.Say(targDialogue, line.speaker, i > 0 ? true : pretext != ""); does not work yet
                     }
                     else
                     {
-                        DialogueSystem.instance.Say(targDialogue, line.speaker, i > 0 ? true : preText != "");
+                        DialogueSystem.instance.Say(targDialogue, line.speaker, i > 0 ? true : pretext != "");
                     }
 
+                    //yield while the dialogue system's architect is constructing the dialogue.
                     architect = DialogueSystem.instance.currentArchitect;
 
                     while (architect.isConstructing)
@@ -171,24 +171,22 @@ public class CLM : MonoBehaviour
                 running = null;
             }
 
-            //if we are runing the segment, force it to stop
-            public void forceFinish()
+            public void ForceFinish()
             {
                 if (running != null)
-                {
                     NovelController.instance.StopCoroutine(running);
-                    running = null;
-                }
+                running = null;
 
                 if (architect != null)
                 {
-                    architect.forceFinish();
+                    architect.ForceFinish();
 
-                    if (preText == "")
+                    //time to complete the entire dialogue string since an interrupted segment with events will only autocomplete to the next event.
+                    if (pretext == "")
                         line.lastSegmentsWholeDialogue = "";
 
+                    //execute all actions that have not been made yet.
                     string[] parts = dialogue.Split('[', ']');
-
                     for (int i = 0; i < parts.Length; i++)
                     {
                         bool isOdd = i % 2 != 0;
@@ -205,10 +203,11 @@ public class CLM : MonoBehaviour
                             }
                             i++;
                         }
-
+                        //append only the dialogue to the whole dialogue and make the architect show it.
                         line.lastSegmentsWholeDialogue += parts[i];
                     }
 
+                    //show the whole dialogue on the architect.
                     architect.ShowText(line.lastSegmentsWholeDialogue);
                 }
             }
