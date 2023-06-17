@@ -6,6 +6,8 @@ public class NovelController : MonoBehaviour
 {
     public static NovelController instance;
 
+    //public GameSavePanel saveLoadPanel;
+
     /// <summary> The lines of data loaded directly from a chapter file.	/// </summary>
     List<string> data = new List<string>();
 
@@ -14,28 +16,44 @@ public class NovelController : MonoBehaviour
         instance = this;
     }
 
-    int activeGameFileNumber = 0;
-    GAMEFILE activeGameFile = null;
+    [HideInInspector]
+    public string activeGameFileName = "";
+
+    GAMEFILE activeGameFile
+    { 
+        get { return GAMEFILE.activeFile; } 
+        set { GAMEFILE.activeFile = value; } 
+    }
+
     string activeChapterFile = "";
 
     // Use this for initialization
     void Start()
     {
-        LoadGameFile(0);
+        GameSavePanel.instance.gameObject.SetActive(false);
+
+        LoadGameFile(FileManager.LoadFile(FileManager.savPath + "savData/file.txt")[0]);
     }
 
-    public void LoadGameFile(int gameFileNumber)
-    {
-        activeGameFileNumber = gameFileNumber;
+    bool encryptGameFile = true;
 
-        string filePath = FileManager.savPath + "Resources/gameFiles/" + gameFileNumber.ToString() + ".txt";
+    public void LoadGameFile(string gameFileName)
+    {
+        activeGameFileName = gameFileName;
+
+        string filePath = FileManager.savPath + "savData/gameFiles/" + activeGameFileName + ".txt";
 
         if (!System.IO.File.Exists(filePath))
         {
-            FileManager.SaveJSON(filePath, new GAMEFILE());
+            activeGameFile = new GAMEFILE();
         }
-
-        activeGameFile = FileManager.LoadJSON<GAMEFILE>(filePath);
+        else
+        {
+            if (encryptGameFile)
+                activeGameFile = FileManager.LoadEncryptedJSON<GAMEFILE>(filePath, keys);
+            else
+                activeGameFile = FileManager.LoadJSON<GAMEFILE>(filePath);
+        }
 
         //Load the file
         data = FileManager.LoadFile(FileManager.savPath + "Resources/Story/" + activeGameFile.chapterName);
@@ -77,9 +95,11 @@ public class NovelController : MonoBehaviour
         chapterProgress = activeGameFile.chapterProgress;
     }
 
+
+
     public void SaveGameFile()
     {
-        string filePath = FileManager.savPath + "Resources/gameFiles/" + activeGameFileNumber.ToString() + ".txt";
+        string filePath = FileManager.savPath + "savData/gameFiles/" + activeGameFileName + ".txt";
 
         activeGameFile.chapterName = activeChapterFile;
         activeGameFile.chapterProgress = chapterProgress;
@@ -106,23 +126,48 @@ public class NovelController : MonoBehaviour
         //save the music to disk
         activeGameFile.music = AudioManager.activeSong != null ? AudioManager.activeSong.clip : null;
 
-        FileManager.SaveJSON(filePath, activeGameFile);
+        //save a preview image (screenshot) to be viewed from the save load screen
+        string screenShotPath = FileManager.savPath + "savData/gameFiles/" + activeGameFileName + ".png";
+        if (FileManager.TryCreateDirectoryFromPath(screenShotPath + ".png"))
+        {
+            GAMEFILE.activeFile.previewImage = ScreenCapture.CaptureScreenshotAsTexture();
+            byte[] textureData = activeGameFile.previewImage.EncodeToPNG();
+            FileManager.SaveComposingBytes(screenShotPath, textureData);
+        }
+
+        //save the data and time this file was created or modified.
+        activeGameFile.modificationDate = System.DateTime.Now.ToString();
+
+        if (encryptGameFile)
+            FileManager.SaveEncryptedJSON(filePath, activeGameFile, keys);
+        else
+            FileManager.SaveJSON(filePath, activeGameFile);
     }
 
+    byte[] keys 
+    { 
+        get { return FileManager.keys; } 
+    }
 
     // Update is called once per frame
     void Update()
     {
-        //testing
-        if (Input.GetKeyDown(KeyCode.RightArrow))
+        if (Input.GetKeyDown(KeyCode.Mouse1))
         {
-            Next();
-        }
+            if (InputScreen.isShowingInputField || ChoiceScreen.isWaitingForChoiceToBeMade)
+                return;
 
-        //testing as well
-        if (Input.GetKeyDown(KeyCode.S))
-        {
-            SaveGameFile();
+            if (!GameSavePanel.instance.gameObject.activeInHierarchy)
+            {
+                GameSavePanel.instance.gameObject.SetActive(true);
+                GameSavePanel.instance.GetComponent<Animator>().SetTrigger("activate");
+
+                GameSavePanel.instance.LoadFilesOntoScreen(GameSavePanel.instance.currentSaveLoadPage);
+            }
+            else
+            {
+                GameSavePanel.instance.GetComponent<Animator>().SetTrigger("deactivate");
+            }
         }
     }
 

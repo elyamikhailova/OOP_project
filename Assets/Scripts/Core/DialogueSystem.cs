@@ -63,7 +63,7 @@ public class DialogueSystem : MonoBehaviour
             textArchitect.Renew(speech, additiveSpeech);
 
         speakerNameText.text = DetermineSpeaker(speaker);//temporary
-        speakerNamePane.SetActive(speakerNameText.text != "");
+        speakerNamePanel.SetActive(speakerNameText.text != "");
 
         isWaitingForUserInput = false;
 
@@ -132,7 +132,7 @@ public class DialogueSystem : MonoBehaviour
 
         speakerNameText.text = speakerName;
 
-        speakerNamePane.SetActive(speakerName != "");
+        speakerNamePanel.SetActive(speakerName != "");
 
         speechText.text = speech;
     }
@@ -149,14 +149,14 @@ public class DialogueSystem : MonoBehaviour
         /// The main panel containing all dialogue related elements on the UI
         /// </summary>
         public GameObject speechPanel;
-        public GameObject speakerNamePane;
+        public GameObject speakerNamePanel;
         public TextMeshProUGUI speakerNameText;
         public TextMeshProUGUI speechText;
     }
     public GameObject speechPanel { get { return elements.speechPanel; } }
     public TextMeshProUGUI speakerNameText { get { return elements.speakerNameText; } }
     public TextMeshProUGUI speechText { get { return elements.speechText; } }
-    public GameObject speakerNamePane { get { return elements.speakerNamePane; } }
+    public GameObject speakerNamePanel { get { return elements.speakerNamePanel; } }
 
     /// <summary>
     /// All objects of this array must be enabled or disabled depending on the status of the dialogue system

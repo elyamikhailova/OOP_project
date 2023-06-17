@@ -56,6 +56,8 @@ public class InputScreen : MonoBehaviour
         instance.header.Hide();
     }
 
+    public static bool isShowingInputField { get { return instance.inputField.gameObject.activeInHierarchy; } }
+
     public static bool isWaitingForUserInput { get { return instance.root.activeInHierarchy; } }
 
     public static bool isRevealing { get { return revealing != null; } }

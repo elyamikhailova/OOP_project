@@ -5,6 +5,11 @@ using UnityEngine;
 [System.Serializable]
 public class GAMEFILE
 {
+    /// <summary>
+    /// The currently open game file
+    /// </summary>
+    public static GAMEFILE activeFile = new GAMEFILE();
+
     public string chapterName;
     public int chapterProgress = 0;
 
@@ -20,6 +25,9 @@ public class GAMEFILE
     public Texture foreground = null;
 
     public AudioClip music = null;
+
+    public string modificationDate = "";
+    public Texture2D previewImage = null;
 
     public GAMEFILE()
     {
