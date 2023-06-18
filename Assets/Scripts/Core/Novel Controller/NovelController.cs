@@ -152,6 +152,10 @@ public class NovelController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (Input.GetKeyUp(KeyCode.RightArrow))
+        {
+            Next();
+        }
         if (Input.GetKeyDown(KeyCode.Mouse1))
         {
             if (InputScreen.isShowingInputField || ChoiceScreen.isWaitingForChoiceToBeMade)
@@ -169,6 +173,29 @@ public class NovelController : MonoBehaviour
                 GameSavePanel.instance.GetComponent<Animator>().SetTrigger("deactivate");
             }
         }
+    }
+
+    public void ClickLoad()
+    {
+        if (InputScreen.isShowingInputField || ChoiceScreen.isWaitingForChoiceToBeMade)
+            return;
+
+        if (!GameSavePanel.instance.gameObject.activeInHierarchy)
+        {
+            GameSavePanel.instance.gameObject.SetActive(true);
+            GameSavePanel.instance.GetComponent<Animator>().SetTrigger("activate");
+
+            GameSavePanel.instance.LoadFilesOntoScreen(GameSavePanel.instance.currentSaveLoadPage);
+        }
+        else
+        {
+            GameSavePanel.instance.GetComponent<Animator>().SetTrigger("deactivate");
+        }
+    }
+
+    public void Menu()
+    {
+        UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
     }
 
     public void LoadChapterFile(string fileName)
@@ -416,10 +443,6 @@ public class NovelController : MonoBehaviour
                 Command_SetPosition(data[1]);
                 break;
 
-            case "setFace":
-                Command_SetFace(data[1]);
-                break;
-
             case "setBody":
                 Command_SetBody(data[1]);
                 break;
@@ -544,19 +567,6 @@ public class NovelController : MonoBehaviour
         c.SetPosition(new Vector2(locationX, locationY));
 
         //print("set " + c.characterName + " position to " + locationX + "," + locationY);
-    }
-
-    void Command_SetFace(string data)
-    {
-        string[] parameters = data.Split(',');
-        string character = parameters[0];
-        string expression = parameters[1];
-        float speed = parameters.Length == 3 ? float.Parse(parameters[2]) : 3f;
-
-        Character c = CharacterManager.instance.GetCharacter(character);
-        Sprite sprite = c.GetSprite(expression);
-
-        c.TransitionExpression(sprite, speed, false);
     }
 
     void Command_SetBody(string data)

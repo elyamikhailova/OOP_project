@@ -38,7 +38,7 @@ including filenames, should contain spaces.
     setBody(characterName,expressionName)                                       ex: setBody(Chugdaan,sad)
 
     *optional parameters
-    1. speed of transition                                                      ex: changeBody(Chugdaan,sad,1.0)
+    1. speed of transition                                                      ex: setBody(Chugdaan,sad,1.0)
     
 #Move character on screen
     move(characterName,targetLocationX,targetLocationY)                         ex: move(Chugdaan,0.3,0.7)

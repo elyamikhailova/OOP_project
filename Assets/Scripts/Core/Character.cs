@@ -326,9 +326,7 @@ public class Character
 
         //get the renderer(s)
         renderers.bodyRenderer = ob.transform.Find("BodyLayer").GetComponentInChildren<Image>();
-        renderers.expressionRenderer = ob.transform.Find("ExpressionLayer").GetComponentInChildren<Image>();
         renderers.allBodyRenderers.Add(renderers.bodyRenderer);
-        renderers.allExpressionRenderers.Add(renderers.expressionRenderer);
 
         dialogue = DialogueSystem.instance;
 
