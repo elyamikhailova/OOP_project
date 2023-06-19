@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class DialogueEvents : MonoBehaviour
 {
-
     /// <summary>
     /// Handle an event on a line segment.
     /// </summary>

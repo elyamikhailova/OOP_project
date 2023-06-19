@@ -9,9 +9,11 @@ public class TagManager : MonoBehaviour
         if (!s.Contains("["))
             return;
 
-        s = s.Replace("[mainCharNAme]", "Chugdaan");
+        //replace the mainCharName tag with the actual name of the main character.
+        s = s.Replace("[playername]", GAMEFILE.activeFile != null ? GAMEFILE.activeFile.playerName : "No Game File");
 
-        s = s.Replace("[curlHolyRelic]", "хз че это");
+        //another random tag just for example.
+        s = s.Replace("[curHolyRelic]", "Divine Arc");
     }
 
     public static string[] SplitByTags(string targetText)

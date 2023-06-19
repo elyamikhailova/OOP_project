@@ -154,22 +154,6 @@ public class Character
             renderers.bodyRenderer.sprite = GetSprite(spriteName);
     }
 
-    public void SetExpression(int index)
-    {
-        renderers.expressionRenderer.sprite = GetSprite(index);
-    }
-    public void SetExpression(Sprite sprite)
-    {
-        renderers.expressionRenderer.sprite = sprite;
-    }
-    public void SetExpression(string spriteName)
-    {
-        if (spriteName == "AlphaOnly")
-            SetExpression(Resources.Load<Sprite>("Images/AlphaOnly"));
-        else
-            renderers.expressionRenderer.sprite = GetSprite(spriteName);
-    }
-
     //Transition Body
     bool isTransitioningBody { get { return transitioningBody != null; } }
     Coroutine transitioningBody = null;
@@ -214,50 +198,6 @@ public class Character
         StopTransitioningBody();
     }
 
-    //Transition Expression
-    bool isTransitioningExpression { get { return transitioningExpression != null; } }
-    Coroutine transitioningExpression = null;
-
-    public void TransitionExpression(Sprite sprite, float speed, bool smooth)
-    {
-        StopTransitioningExpression();
-        transitioningExpression = CharacterManager.instance.StartCoroutine(TransitioningExpression(sprite, speed, smooth));
-    }
-
-    void StopTransitioningExpression()
-    {
-        if (isTransitioningExpression)
-            CharacterManager.instance.StopCoroutine(transitioningExpression);
-        transitioningExpression = null;
-    }
-
-    public IEnumerator TransitioningExpression(Sprite sprite, float speed, bool smooth)
-    {
-        for (int i = 0; i < renderers.allExpressionRenderers.Count; i++)
-        {
-            Image image = renderers.allExpressionRenderers[i];
-            if (image.sprite == sprite)
-            {
-                renderers.expressionRenderer = image;
-                break;
-            }
-        }
-
-        if (renderers.expressionRenderer.sprite != sprite)
-        {
-            Image image = GameObject.Instantiate(renderers.expressionRenderer.gameObject, renderers.expressionRenderer.transform.parent).GetComponent<Image>();
-            renderers.allExpressionRenderers.Add(image);
-            renderers.expressionRenderer = image;
-            image.color = GlobalF.SetAlpha(image.color, 0f);
-            image.sprite = sprite;
-        }
-
-        while (GlobalF.TransitionImages(ref renderers.expressionRenderer, ref renderers.allExpressionRenderers, speed, smooth, true))
-            yield return new WaitForEndOfFrame();
-
-        StopTransitioningExpression();
-    }
-
     //End Transition Images\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     public void Flip()
     {
@@ -287,21 +227,18 @@ public class Character
         Sprite alphaSprite = Resources.Load<Sprite>("Images/AlphaOnly");
 
         lastBodySprite = renderers.bodyRenderer.sprite;
-        lastFacialSprite = renderers.expressionRenderer.sprite;
 
         TransitionBody(alphaSprite, speed, smooth);
-        TransitionExpression(alphaSprite, speed, smooth);
 
         visibleInScene = false;
     }
 
-    Sprite lastBodySprite, lastFacialSprite = null;
+    Sprite lastBodySprite = null;
     public void FadeIn(float speed = 3, bool smooth = false)
     {
-        if (lastBodySprite != null && lastFacialSprite != null)
+        if (lastBodySprite != null)
         {
             TransitionBody(lastBodySprite, speed, smooth);
-            TransitionExpression(lastFacialSprite, speed, smooth);
 
             if (enabled)
                 visibleInScene = true;
@@ -342,13 +279,8 @@ public class Character
         /// The body renderer for a multi layer character.
         /// </summary>
         public Image bodyRenderer;
-        /// <summary>
-        /// The expression renderer for a multi layer character.
-        /// </summary>
-        public Image expressionRenderer;
 
         public List<Image> allBodyRenderers = new List<Image>();
-        public List<Image> allExpressionRenderers = new List<Image>();
     }
 
     public Renderers renderers = new Renderers();

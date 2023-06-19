@@ -1,0 +1,5 @@
+next
+
+narrator "[setBackground(EmptyGameFile)]Конец игры. Чугдаан умер...[playMusic()]"
+
+endOfGame

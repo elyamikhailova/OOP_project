@@ -1,12 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class NovelController : MonoBehaviour
 {
     public static NovelController instance;
-
-    //public GameSavePanel saveLoadPanel;
 
     /// <summary> The lines of data loaded directly from a chapter file.	/// </summary>
     List<string> data = new List<string>();
@@ -56,7 +55,8 @@ public class NovelController : MonoBehaviour
         }
 
         //Load the file
-        data = FileManager.LoadFile(FileManager.savPath + "Resources/Story/" + activeGameFile.chapterName);
+        TextAsset chapterAsset = Resources.Load<TextAsset>("Story/" + activeGameFile.chapterName);
+        data = FileManager.ReadTextAsset(chapterAsset);
         activeChapterFile = activeGameFile.chapterName;
         cachedLastSpeaker = activeGameFile.cachedLastSpeaker;
 
@@ -68,7 +68,6 @@ public class NovelController : MonoBehaviour
             GAMEFILE.CHARACTERDATA data = activeGameFile.charactersInScene[i];
             Character character = CharacterManager.instance.CreateCharacter(data.characterName, data.enabled);
             character.SetBody(data.bodyExpression);
-            character.SetExpression(data.facialExpression);
             if (data.facingLeft)
                 character.FaceLeft();
             else
@@ -87,6 +86,15 @@ public class NovelController : MonoBehaviour
         //start the music back up
         if (activeGameFile.music != null)
             AudioManager.instance.PlaySong(activeGameFile.music);
+
+        //start the ambiance back up
+        if (activeGameFile.ambiance.Count > 0)
+        {
+            foreach (AudioClip clip in activeGameFile.ambiance)
+            {
+                AudioManager.instance.PlayAmbiance(clip);
+            }
+        }
 
         if (handlingChapterFile != null)
             StopCoroutine(handlingChapterFile);
@@ -125,6 +133,9 @@ public class NovelController : MonoBehaviour
 
         //save the music to disk
         activeGameFile.music = AudioManager.activeSong != null ? AudioManager.activeSong.clip : null;
+
+        //save the ambiance to disk if there is any playing.
+        activeGameFile.ambiance = AudioManager.activeAmbianceClips;
 
         //save a preview image (screenshot) to be viewed from the save load screen
         string screenShotPath = FileManager.savPath + "savData/gameFiles/" + activeGameFileName + ".png";
@@ -246,6 +257,12 @@ public class NovelController : MonoBehaviour
                     yield return HandlingChoiceLine(line);
                     chapterProgress++;
                 }
+                //this is user input
+                else if (line.StartsWith("input"))
+                {
+                    yield return HandlingInputLine(line);
+                    chapterProgress++;
+                }
                 //this is a normal line of dialogue and actions.
                 else
                 {
@@ -261,6 +278,44 @@ public class NovelController : MonoBehaviour
         }
 
         handlingChapterFile = null;
+    }
+
+    IEnumerator HandlingInputLine(string line)
+    {
+        string title = line.Split('"')[1];
+
+        //get the one or more commands to execute when this input is done and accepted.
+        string[] parts = line.Split(' ');
+        List<string> endingCommands = new List<string>();
+        if (parts.Length >= 3)
+        {
+            for (int i = 2; i < parts.Length; i++)
+            {
+                endingCommands.Add(parts[i]);
+            }
+        }
+
+        //we have the title and the ending commands to execute. Now we need to bring up the input screen.
+        InputScreen.Show(title);
+        while (InputScreen.isShowingInputField || InputScreen.isRevealing)
+        {
+            //wait for the input screen to finish revealing before being able to accept input.
+            if (Input.GetKey(KeyCode.Return) && !InputScreen.isRevealing)
+            {
+                //if the input is not empty, accept it.
+                if (InputScreen.currentInput != "")
+                    InputScreen.instance.Accept();
+            }
+
+            yield return new WaitForEndOfFrame();
+        }
+
+        //the input has been accepted, now it is time to execute the commands that follow.
+        for (int i = 0; i < endingCommands.Count; i++)
+        {
+            string command = endingCommands[i];
+            HandleAction(command);
+        }
     }
 
     IEnumerator HandlingChoiceLine(string line)
@@ -415,6 +470,10 @@ public class NovelController : MonoBehaviour
                 Command_Exit(data[1]);
                 break;
 
+            case "savePlayerName":
+                Command_SavePlayerName(InputScreen.currentInput); 
+                break;
+
             case "setBackground":
                 Command_SetLayerImage(data[1], BCFC.instance.background);
                 break;
@@ -433,6 +492,17 @@ public class NovelController : MonoBehaviour
 
             case "playMusic":
                 Command_PlayMusic(data[1]);
+                break;
+
+            case "playAmbiance":
+                Command_PlayAmbiance(data[1]);
+                break;
+
+            case "stopAmbiance":
+                if (data[1] != "")
+                    Command_StopAmbiance(data[1]);
+                else
+                    Command_StopAllAmbiance();
                 break;
 
             case "move":
@@ -482,8 +552,37 @@ public class NovelController : MonoBehaviour
             case "next":
                 Next();
                 break;
+
+            case "endOfGame":
+                Menu();
+                break;
         }
 
+    }
+
+    void Command_SavePlayerName(string newName)
+    {
+        activeGameFile.playerName = newName;
+    }
+
+    void Command_PlayAmbiance(string ambianceTrackName)
+    {
+        //load the track
+        AudioClip clip = Resources.Load<AudioClip>("Audio/Ambiance/" + ambianceTrackName);
+        if (clip != null)
+        {
+            AudioManager.instance.PlayAmbiance(clip);
+        }
+    }
+
+    void Command_StopAmbiance(string ambianceTrackName)
+    {
+        AudioManager.instance.StopAmbiance(ambianceTrackName);
+    }
+
+    void Command_StopAllAmbiance()
+    {
+        AudioManager.instance.StopAmbiance();
     }
 
     void Command_Load(string chapterName)
@@ -656,14 +755,7 @@ public class NovelController : MonoBehaviour
         {
             Character c = CharacterManager.instance.GetCharacter(s, true, false);
             if (!c.enabled)
-            {
-                c.renderers.bodyRenderer.color = new Color(1, 1, 1, 0);
-                c.renderers.expressionRenderer.color = new Color(1, 1, 1, 0);
                 c.enabled = true;
-
-                c.TransitionBody(c.renderers.bodyRenderer.sprite, speed, smooth);
-                c.TransitionExpression(c.renderers.expressionRenderer.sprite, speed, smooth);
-            }
             else
                 c.FadeIn(speed, smooth);
         }

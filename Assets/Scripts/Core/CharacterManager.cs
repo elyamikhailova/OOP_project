@@ -37,7 +37,9 @@ public class CharacterManager : MonoBehaviour
 
         else if (createCharacterIfDoesNotExist)
         {
-            return CreateCharacter(characterName, enableCreatedCharacterOnStart);
+            if (Resources.Load("Characters/Character[" + characterName + "]") != null)
+                return CreateCharacter(characterName, enableCreatedCharacterOnStart);
+            return null;
         }
 
         return null;
@@ -46,10 +48,38 @@ public class CharacterManager : MonoBehaviour
     public Character CreateCharacter(string characterName, bool enabledOnStart = true)
     {
         Character newCharacter = new Character(characterName, enabledOnStart);
+        
         characterDictionary.Add(characterName, characters.Count);
         characters.Add(newCharacter);
 
         return newCharacter;
+    }
+
+    /// <summary>
+    /// Destroys a character in the scene.
+    /// </summary>
+    /// <param name="character"></param>
+    public void DestroyCharacter(Character character)
+    {
+        if (characters.Contains(character))
+            characters.Remove(character);
+
+        characterDictionary.Remove(character.characterName);
+
+        Destroy(character.root.gameObject, 0.01f);
+    }
+
+    /// <summary>
+    /// Destroys a character in the scene by this name.
+    /// </summary>
+    /// <param name="characterName"></param>
+    public void DestroyCharacter(string characterName)
+    {
+        Character character = GetCharacter(characterName, false, false);
+        if (character != null)
+        {
+            DestroyCharacter(character);
+        }
     }
 
     public class CHARACTERPOSITIONS
@@ -61,15 +91,4 @@ public class CharacterManager : MonoBehaviour
         public Vector2 topRight = new Vector2(1f, 1f);
     }
     public static CHARACTERPOSITIONS characterPositions = new CHARACTERPOSITIONS();
-
-    public class CHARACTERBODY
-    {
-        public int normal = 0;
-        public int spear = 1;
-        public int helm = 2;
-        public int attack = 3;
-        public int side = 4;
-        public int sad = 5;
-    }
-    public static CHARACTERBODY characterBody = new CHARACTERBODY();
 }

@@ -6,15 +6,15 @@ public class AudioManager : MonoBehaviour
 {
     public static AudioManager instance;
 
+    public static SONG activeSong = null;
     public static List<SONG> allSongs = new List<SONG>();
 
-    public static List<AudioSource> allSFX = new List<AudioSource>();
-
-    public static SONG activeSong = null;
-
     public float songTransitionSpeed = 2f;
-
     public bool songSmoothTransitions = true;
+
+    //Ambiance controller
+    public static List<AudioSource> activeAmbiance = new List<AudioSource>();
+    public static List<AudioSource> deactivatedAmbiance = new List<AudioSource>();
 
     void Awake()
     {
@@ -30,86 +30,174 @@ public class AudioManager : MonoBehaviour
         }
     }
 
-    public void PlaySFX(AudioClip effect, float volume = 1f, float pitch = 1f)
-    {
-        AudioSource source = CreateNewSource(string.Format("SFX [{0}]", effect.name));
-        source.clip = effect;
-        source.volume = volume;
-        source.pitch = pitch;
-        allSFX.Add(source);
-        source.Play();
-
-        Destroy(source.gameObject, effect.length);
-
-    }
-
-    Coroutine stoppingSFX = null;
-
-    public bool isStoppingSFX
+    /// <summary>
+    /// Returns a list of all the clips being played as ambiance right now.
+    /// </summary>
+    public static List<AudioClip> activeAmbianceClips
     {
         get
         {
-            return stoppingSFX != null;
-        }
-    }
-
-    public void stopStoppingSFX()
-    {
-        if (isStoppingSFX)
-        {
-            StopCoroutine(stoppingSFX);
-        }
-
-        stoppingSFX = null;
-    }
-
-    public void StopSFX(string sfxName, float time)
-    {
-        stopStoppingSFX();
-        AudioSource sourceToBeDestroyed = null;
-        
-        foreach (AudioSource audio in allSFX)
-        {
-            if (audio.name == "SFX [" + sfxName + "]")
+            List<AudioClip> retVal = new List<AudioClip>();
+            foreach (AudioSource s in activeAmbiance)
             {
-                int index = allSFX.IndexOf(audio);
-                sourceToBeDestroyed = allSFX[index];
-                break;
+                retVal.Add(s.clip);
+            }
+            return retVal;
+        }
+    }
+
+    GameObject volatileParent = null;
+    void MakeVolatileChild(Transform ob)
+    {
+        if (volatileParent == null)
+            volatileParent = new GameObject("[AUDIOMANAGER VOLATILE]");
+
+        ob.parent = volatileParent.transform;
+    }
+
+    /// <summary>
+    /// Start playing an ambiance track.
+    /// </summary>
+    /// <param name="clip"></param>
+    public void PlayAmbiance(AudioClip clip)
+    {
+        //only play the ambiance, if this clip is not already playing.
+        for (int i = activeAmbiance.Count - 1; i >= 0; i--)
+        {
+            if (activeAmbiance[i] != null)
+            {
+                if (activeAmbiance[i].clip == clip)
+                    return;
+            }
+            else
+            {
+                activeAmbiance.RemoveAt(i);
             }
         }
 
-        AudioManager.instance.StartCoroutine((DestroySFX(sourceToBeDestroyed, time)));
+        //the clip is not playing. make it play
+        AudioSource source = CreateNewSource(string.Format("AMBIANCE [{0}]", clip.name));
+        MakeVolatileChild(source.transform);
+        source.clip = clip;
+        source.volume = 0;//start at zero so ambiance fades in.
+        source.Play();
+        activeAmbiance.Add(source);
+
+        //make all ambiance fade in and out
+        if (ambianceLeveling == null)
+            ambianceLeveling = StartCoroutine(AmbianceLeveling());
     }
 
-    public IEnumerator DestroySFX(AudioSource source, float time)
+    /// <summary>
+    /// Stop an ambiance clip.
+    /// </summary>
+    /// <param name="clip"></param>
+    public void StopAmbiance(AudioClip clip)
     {
-        while (DestroyingSFX(source, time))
+        StopAmbiance(clip.name);
+    }
+
+    /// <summary>
+    /// Stop an ambiance clip by this name.
+    /// </summary>
+    /// <param name="clipName"></param>
+    public void StopAmbiance(string clipName)
+    {
+        for (int i = activeAmbiance.Count - 1; i >= 0; i--)
         {
+            if (activeAmbiance[i] == null)
+            {
+                activeAmbiance.RemoveAt(i);
+                continue;
+            }
+
+            AudioSource s = activeAmbiance[i];
+            if (s.clip.name.ToLower() == clipName.ToLower())
+            {
+                activeAmbiance.Remove(s);
+                deactivatedAmbiance.Add(s);
+            }
+        }
+
+        //make all ambiance fade in and out
+        if (ambianceLeveling == null)
+            ambianceLeveling = StartCoroutine(AmbianceLeveling());
+    }
+
+    /// <summary>
+    /// Stop all ambiance clips playing on this manager.
+    /// </summary>
+    public void StopAmbiance()
+    {
+        for (int i = activeAmbiance.Count - 1; i >= 0; i--)
+        {
+            if (activeAmbiance[i] == null)
+            {
+                activeAmbiance.RemoveAt(i);
+                continue;
+            }
+
+            AudioSource s = activeAmbiance[i];
+            activeAmbiance.Remove(s);
+            deactivatedAmbiance.Add(s);
+        }
+
+        //make all ambiance fade in and out
+        if (ambianceLeveling == null)
+            ambianceLeveling = StartCoroutine(AmbianceLeveling());
+    }
+
+    Coroutine ambianceLeveling = null;
+    IEnumerator AmbianceLeveling()
+    {
+        bool handle = true;
+        while (handle)
+        {
+            handle = false;
+            //make all active ambiance transition in
+            for (int i = 0; i < activeAmbiance.Count; i++)
+            {
+                AudioSource ambiance = activeAmbiance[i];
+                if (ambiance.volume < 1)
+                {
+                    handle = true;
+                    ambiance.volume = Mathf.MoveTowards(ambiance.volume, 1, 2f * Time.deltaTime);
+                }
+            }
+            //silence and destroy all inactive ambiance.
+            if (deactivatedAmbiance.Count > 0)
+            {
+                for (int i = deactivatedAmbiance.Count - 1; i >= 0; i--)
+                {
+                    AudioSource ambiance = deactivatedAmbiance[i];
+                    if (ambiance.volume > 0)
+                    {
+                        handle = true;
+                        ambiance.volume = Mathf.MoveTowards(ambiance.volume, 0, 2f * Time.deltaTime);
+                        if (ambiance.volume == 0)
+                        {
+                            deactivatedAmbiance.Remove(ambiance);
+                            Destroy(ambiance.gameObject, 0.01f);
+                        }
+                    }
+                }
+            }
             yield return new WaitForEndOfFrame();
         }
 
-        stopStoppingSFX();
+        ambianceLeveling = null;
     }
 
-    bool DestroyingSFX(AudioSource audio, float time)
+    public void PlaySFX(AudioClip effect, float volume = 1f, float pitch = 1f)
     {
-        bool stillDestroying = true;
+        AudioSource source = CreateNewSource(string.Format("SFX [{0}]", effect.name));
+        MakeVolatileChild(source.transform);
+        source.clip = effect;
+        source.volume = volume;
+        source.pitch = pitch;
+        source.Play();
 
-        float spd = Time.deltaTime * time;
-
-        if (audio.volume != 0)
-        {
-            audio.volume = Mathf.MoveTowards(audio.volume, 0, spd);
-        }
-
-        stillDestroying = audio.volume != 0;
-
-        if (!stillDestroying)
-        {
-            allSFX.Remove(audio);
-            Destroy(audio.gameObject, 1f);
-        }
-        return stillDestroying;
+        Destroy(source.gameObject, effect.length);
     }
 
     public void PlaySong(AudioClip song, float maxVolume = 1f, float pitch = 1f, float startingVolume = 0f, bool playOnStart = true, bool loop = true)
@@ -124,19 +212,14 @@ public class AudioManager : MonoBehaviour
                     activeSong = s;
                     break;
                 }
-
             }
-
             if (activeSong == null || activeSong.clip != song)
             {
                 activeSong = new SONG(song, maxVolume, pitch, startingVolume, playOnStart, loop);
             }
         }
-
         else
-        {
             activeSong = null;
-        }
 
         StopAllCoroutines();
         StartCoroutine(VolumeLevelling());
@@ -181,7 +264,6 @@ public class AudioManager : MonoBehaviour
                     song.DestroySong();
                     continue;
                 }
-
             }
         }
 
