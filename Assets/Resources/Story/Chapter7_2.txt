@@ -1,0 +1,13 @@
+next
+
+Кыыс Дэбилийэ "[setBackground(91)]Xорошо, подумаю над этим!"
+
+narrator "[setBackground(98)]{wa 0,2}[setBackground(97)]Поцеловавшись с Чугдааном, она поняла, что любит его.{wa 0,2}[setBackground(96)]"
+
+"[setBackground(104)]3а свои подвиги Дэбилийэ получила прошение{wa 0,2}[setBackground(91)] и смогла остаться жить в среднем мире{wa 0,2}[setBackground(90)] вместе с Чугдааном."
+
+"[setBackground(102)]Вместе они воцарили на земле покой{wa 0,2}[setBackground(103)], спасли людей от нечисти нижнего мира и восстановили связь между верхним и средним мирами."
+
+"[setBackground(EmptyGameFile)]{wa 0,2}Конец!"
+
+endOfGame
